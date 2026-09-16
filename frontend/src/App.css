@@ -15,6 +15,9 @@
   padding: var(--space-lg) var(--space-md);
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .app-header h1 {
@@ -38,99 +41,82 @@
   width: 100%;
 }
 
-/* --- Status card (Phase 1 health check) --- */
-.status-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  margin-bottom: var(--space-lg);
-}
-
-.status-card h2 {
-  font-size: var(--font-size-lg);
-  color: var(--color-primary);
-  margin-bottom: var(--space-md);
-}
-
-.status-card .status-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.status-card .status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-dot.connected {
-  background-color: var(--color-success);
-  box-shadow: 0 0 6px rgba(45, 106, 79, 0.5);
-}
-
-.status-dot.disconnected {
-  background-color: var(--color-error);
-  box-shadow: 0 0 6px rgba(230, 57, 70, 0.5);
-}
-
-.status-dot.loading {
-  background-color: var(--color-warning);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.status-label {
-  font-size: var(--font-size-base);
-  font-weight: 500;
-}
-
-.status-details {
-  margin-top: var(--space-md);
-  padding-top: var(--space-md);
-  border-top: 1px solid var(--color-border);
-}
-
-.service-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-xs) 0;
-  font-size: var(--font-size-sm);
-}
-
-.service-name {
-  color: var(--color-text-light);
-}
-
-.service-status {
-  font-weight: 600;
-}
-
-.service-status.ready {
-  color: var(--color-success);
-}
-
-.service-status.missing {
-  color: var(--color-error);
-}
-
-/* --- Check button --- */
-.check-btn {
+/* --- Diagnose button --- */
+.diagnose-btn {
   display: block;
   width: 100%;
   padding: var(--space-md) var(--space-lg);
   margin-top: var(--space-md);
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
   color: white;
   border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+}
+
+.diagnose-btn:hover {
+  box-shadow: 0 6px 20px rgba(45, 106, 79, 0.4);
+}
+
+.diagnose-btn:active {
+  transform: scale(0.98);
+}
+
+.diagnose-btn:disabled {
+  background: var(--color-text-light);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Loading spinner --- */
+.loading-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Scanned image in results --- */
+.scanned-image-container {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.scanned-image {
+  width: 100%;
+  max-height: 250px;
+  object-fit: cover;
+  display: block;
+}
+
+/* --- Scan again button --- */
+.scan-again-btn {
+  display: block;
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
   font-weight: 600;
@@ -138,37 +124,24 @@
   transition: background 0.2s, transform 0.1s;
 }
 
-.check-btn:hover {
-  background: var(--color-primary-light);
+.scan-again-btn:hover {
+  background: #f0fdf4;
 }
 
-.check-btn:active {
+.scan-again-btn:active {
   transform: scale(0.98);
-}
-
-.check-btn:disabled {
-  background: var(--color-text-light);
-  cursor: not-allowed;
-  transform: none;
 }
 
 /* --- Error message --- */
 .error-msg {
   margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
   padding: var(--space-md);
   background: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: var(--radius-sm);
   color: var(--color-error);
   font-size: var(--font-size-sm);
-}
-
-/* --- Latency display --- */
-.latency {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-light);
-  text-align: center;
-  margin-top: var(--space-sm);
 }
 
 /* --- Footer --- */

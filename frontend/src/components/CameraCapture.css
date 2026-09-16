@@ -1,0 +1,112 @@
+/* ==========================================
+ * CameraCapture — Styles
+ * ========================================== */
+
+.camera-capture {
+  margin-bottom: var(--space-lg);
+}
+
+/* --- Preview --- */
+.preview-container {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.clear-btn {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.clear-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* --- Placeholder --- */
+.capture-placeholder {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  background: var(--color-surface);
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: var(--space-sm);
+}
+
+.capture-placeholder p {
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+/* --- Action buttons --- */
+.capture-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.capture-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.1s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.capture-btn:active {
+  transform: scale(0.97);
+}
+
+.capture-btn.camera {
+  background: var(--color-primary);
+  color: white;
+}
+
+.capture-btn.camera:hover {
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+}
+
+.capture-btn.upload {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.capture-btn.upload:hover {
+  background: #f0fdf4;
+}

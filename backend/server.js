@@ -18,6 +18,7 @@ dotenv.config();
 
 // --- Route imports ---
 const healthRoutes = require('./routes/health');
+const diagnoseRoutes = require('./routes/diagnose');
 
 // --- App setup ---
 const app = express();
@@ -40,6 +41,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // --- Routes ---
 app.use('/api', healthRoutes);
+app.use('/api', diagnoseRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

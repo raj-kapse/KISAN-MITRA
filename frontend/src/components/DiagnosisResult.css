@@ -1,0 +1,199 @@
+/* ==========================================
+ * DiagnosisResult — Styles
+ * ========================================== */
+
+.diagnosis-result {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  margin-bottom: var(--space-lg);
+}
+
+/* --- Header --- */
+.diagnosis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg);
+  gap: var(--space-md);
+}
+
+.diagnosis-header.healthy {
+  background: linear-gradient(135deg, #d8f3dc, #b7e4c7);
+}
+
+.diagnosis-header.diseased {
+  background: linear-gradient(135deg, #fff3cd, #ffe0b2);
+}
+
+.diagnosis-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.diagnosis-emoji {
+  font-size: 2rem;
+}
+
+.disease-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.crop-badge {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin-top: 2px;
+  display: inline-block;
+}
+
+/* --- Confidence badge --- */
+.confidence-badge {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.confidence-badge.high {
+  background: #d4edda;
+  color: #155724;
+}
+
+.confidence-badge.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.confidence-badge.low {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* --- Low confidence warning --- */
+.low-confidence-warning {
+  margin: 0 var(--space-lg);
+  padding: var(--space-md);
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: #856404;
+  text-align: center;
+}
+
+/* --- Info row --- */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.info-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+.severity-badge {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+/* --- Sections --- */
+.diagnosis-section {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.diagnosis-section h4 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--color-primary-dark);
+}
+
+.diagnosis-section p {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+/* --- Symptoms --- */
+.symptoms-list {
+  list-style: none;
+  padding: 0;
+}
+
+.symptoms-list li {
+  font-size: var(--font-size-sm);
+  padding: var(--space-xs) 0;
+  padding-left: var(--space-lg);
+  position: relative;
+  color: var(--color-text);
+}
+
+.symptoms-list li::before {
+  content: '•';
+  position: absolute;
+  left: var(--space-sm);
+  color: var(--color-primary);
+  font-weight: bold;
+}
+
+/* --- Treatment cards --- */
+.treatment-section {
+  padding-bottom: var(--space-lg);
+}
+
+.treatment-card {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.treatment-card:last-child {
+  margin-bottom: 0;
+}
+
+.treatment-type {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+.treatment-card p {
+  margin: 0;
+}
+
+.treatment-card.chemical {
+  background: #e8f4fd;
+  border-left: 3px solid #2196f3;
+}
+
+.treatment-card.organic {
+  background: #e8f5e9;
+  border-left: 3px solid #4caf50;
+}
+
+.treatment-card.preventive {
+  background: #fff8e1;
+  border-left: 3px solid #ff9800;
+}
+
+/* --- Healthy message --- */
+.healthy-message {
+  padding: var(--space-lg);
+  text-align: center;
+  font-size: var(--font-size-base);
+  color: var(--color-success);
+  font-weight: 500;
+  border-top: 1px solid var(--color-border);
+}

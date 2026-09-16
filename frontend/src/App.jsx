@@ -1,57 +1,80 @@
 /**
- * Kisan Mitra — Main App Component (Phase 1)
+ * Kisan Mitra — Main App Component (Phase 2)
  *
- * Displays a connectivity dashboard that:
- * 1. Pings the backend /api/health endpoint
- * 2. Shows connection status with latency
- * 3. Reports which API keys are configured
- *
- * This validates the full frontend ↔ backend round-trip.
+ * Core flow:
+ * 1. User captures/uploads a crop leaf photo
+ * 2. Photo is sent to backend → Gemini AI for diagnosis
+ * 3. Results displayed: disease, confidence, treatment, symptoms
+ * 4. User can scan again for another diagnosis
  */
 
 import { useState } from 'react';
-import { checkHealth } from './api';
+import CameraCapture from './components/CameraCapture';
+import DiagnosisResult from './components/DiagnosisResult';
+import { diagnoseCrop } from './api';
 import './App.css';
 
 function App() {
-  // Connection state
-  const [status, setStatus] = useState('idle'); // idle | loading | connected | error
-  const [healthData, setHealthData] = useState(null);
+  // Image state
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+
+  // Diagnosis state
+  const [diagnosis, setDiagnosis] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [latency, setLatency] = useState(null);
 
   /**
-   * Performs a health check against the backend.
-   * Measures round-trip latency and displays service status.
+   * Handle image selection from CameraCapture component.
+   * Stores the File object and creates a preview URL.
    */
-  const runHealthCheck = async () => {
-    setStatus('loading');
-    setError(null);
-    const start = performance.now();
-
-    try {
-      const data = await checkHealth();
-      const elapsed = Math.round(performance.now() - start);
-
-      setHealthData(data);
-      setLatency(elapsed);
-      setStatus('connected');
-    } catch (err) {
-      setError(err.message);
-      setStatus('error');
-      setHealthData(null);
-      setLatency(null);
+  const handleImageSelected = (file) => {
+    if (file) {
+      setSelectedImage(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+      // Clear previous results when a new image is selected
+      setDiagnosis(null);
+      setError(null);
+    } else {
+      setSelectedImage(null);
+      setImagePreviewUrl(null);
     }
   };
 
   /**
-   * Returns a human-readable label + CSS class for a service status.
+   * Submit the selected image for AI diagnosis.
+   * Calls the backend /api/diagnose endpoint.
    */
-  const getServiceDisplay = (service) => {
-    if (!service) return { label: '—', className: '' };
-    return service.configured
-      ? { label: '✅ Ready', className: 'ready' }
-      : { label: '❌ Key missing', className: 'missing' };
+  const handleDiagnose = async () => {
+    if (!selectedImage) return;
+
+    setLoading(true);
+    setError(null);
+    setDiagnosis(null);
+
+    try {
+      const result = await diagnoseCrop(selectedImage);
+      if (result.success && result.diagnosis) {
+        setDiagnosis(result.diagnosis);
+      } else {
+        throw new Error(result.error || 'Unexpected response from server');
+      }
+    } catch (err) {
+      console.error('Diagnosis error:', err);
+      setError(err.message || 'Failed to analyze image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Reset everything for a new scan.
+   */
+  const handleScanAgain = () => {
+    setSelectedImage(null);
+    setImagePreviewUrl(null);
+    setDiagnosis(null);
+    setError(null);
   };
 
   return (
@@ -64,79 +87,69 @@ function App() {
 
       {/* Main content */}
       <main className="app-main">
-        <div className="status-card">
-          <h2>System Status</h2>
 
-          {/* Connection indicator */}
-          <div className="status-indicator">
-            <span
-              className={`status-dot ${
-                status === 'connected'
-                  ? 'connected'
-                  : status === 'loading'
-                  ? 'loading'
-                  : status === 'error'
-                  ? 'disconnected'
-                  : ''
-              }`}
+        {/* Step 1: Capture / Upload */}
+        {!diagnosis && (
+          <>
+            <CameraCapture
+              onImageSelected={handleImageSelected}
+              disabled={loading}
             />
-            <span className="status-label">
-              {status === 'idle' && 'Press button to check backend connection'}
-              {status === 'loading' && 'Connecting to backend…'}
-              {status === 'connected' && 'Backend connected'}
-              {status === 'error' && 'Connection failed'}
-            </span>
+
+            {/* Diagnose button — shown only when image is selected */}
+            {selectedImage && (
+              <button
+                className="diagnose-btn"
+                onClick={handleDiagnose}
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="loading-content">
+                    <span className="spinner" />
+                    Analyzing...
+                  </span>
+                ) : (
+                  '🔬 Analyze Crop'
+                )}
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <div className="error-msg">
+            <strong>Error:</strong> {error}
           </div>
+        )}
 
-          {/* Service details (shown after successful check) */}
-          {healthData?.services && (
-            <div className="status-details">
-              {[
-                { key: 'gemini', label: 'Gemini AI' },
-                { key: 'openweather', label: 'OpenWeather' },
-                { key: 'firebase', label: 'Firebase' },
-              ].map(({ key, label }) => {
-                const display = getServiceDisplay(healthData.services[key]);
-                return (
-                  <div className="service-row" key={key}>
-                    <span className="service-name">{label}</span>
-                    <span className={`service-status ${display.className}`}>
-                      {display.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        {/* Step 2: Results */}
+        {diagnosis && (
+          <>
+            {/* Show the scanned image at the top of results */}
+            {imagePreviewUrl && (
+              <div className="scanned-image-container">
+                <img
+                  src={imagePreviewUrl}
+                  alt="Scanned crop"
+                  className="scanned-image"
+                />
+              </div>
+            )}
 
-          {/* Latency */}
-          {latency !== null && (
-            <p className="latency">Round-trip: {latency}ms</p>
-          )}
+            <DiagnosisResult diagnosis={diagnosis} />
 
-          {/* Error message */}
-          {error && (
-            <div className="error-msg">
-              <strong>Error:</strong> {error}
-              <br />
-              <small>Make sure the backend is running on port 5000.</small>
-            </div>
-          )}
-
-          {/* Action button */}
-          <button
-            className="check-btn"
-            onClick={runHealthCheck}
-            disabled={status === 'loading'}
-          >
-            {status === 'loading' ? 'Checking…' : 'Check Backend Connection'}
-          </button>
-        </div>
+            {/* Scan again button */}
+            <button className="scan-again-btn" onClick={handleScanAgain}>
+              📸 Scan Another Crop
+            </button>
+          </>
+        )}
       </main>
 
       {/* Footer */}
       <footer className="app-footer">
-        Kisan Mitra · Phase 1 · Skeleton & Connectivity
+        Kisan Mitra · AI-powered crop advisory for Indian farmers
       </footer>
     </div>
   );
