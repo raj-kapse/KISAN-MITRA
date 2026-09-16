@@ -41,7 +41,7 @@ function Chatbot({ diagnosis, lang }) {
     try {
       // Build context from diagnosis if it exists
       let context = 'You are Kisan Mitra, a helpful AI agricultural assistant for Indian farmers.';
-      if (diagnosis && !diagnosis.isHealthy) {
+      if (diagnosis && diagnosis.disease_name?.toLowerCase() !== 'healthy' && diagnosis.disease_name !== 'Invalid Image') {
         context += ` The farmer recently scanned a crop diagnosed with ${diagnosis.disease_name}. Symptoms: ${diagnosis.symptoms?.join(', ')}. Chemical Treatment: ${diagnosis.treatment?.chemical}. Organic Treatment: ${diagnosis.treatment?.organic}.`;
       }
       

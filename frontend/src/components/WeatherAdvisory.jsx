@@ -83,7 +83,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
         {locationDenied ? (
           <small>Enable location in your browser settings and reload.</small>
         ) : (
-          <button className="retry-btn" onClick={fetchWeather}>Retry</button>
+          <button className="retry-btn" onClick={fetchWeatherAndAdvice}>Retry</button>
         )}
       </div>
     );

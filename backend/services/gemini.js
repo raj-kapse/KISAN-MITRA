@@ -181,9 +181,12 @@ async function chatWithGemini(messages, systemContext) {
       parts: [{ text: msg.content }]
     }));
 
-    // Inject system context into the first message
-    if (contents.length > 0 && contents[0].role === 'user') {
-      contents[0].parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${contents[0].parts[0].text}`;
+    // Inject system context into the first USER message.
+    // The chat always opens with a model greeting, so the first message
+    // is 'model' — find the first user turn instead of assuming index 0.
+    const firstUser = contents.find(m => m.role === 'user');
+    if (firstUser) {
+      firstUser.parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${firstUser.parts[0].text}`;
     }
 
     const response = await ai.models.generateContent({
