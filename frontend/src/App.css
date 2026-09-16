@@ -1,0 +1,181 @@
+/* ==========================================
+ * Kisan Mitra — App Component Styles
+ * ========================================== */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* --- Header --- */
+.app-header {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: white;
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.app-header h1 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.app-header .subtitle {
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* --- Main content --- */
+.app-main {
+  flex: 1;
+  padding: var(--space-lg) var(--space-md);
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* --- Status card (Phase 1 health check) --- */
+.status-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: var(--space-lg);
+}
+
+.status-card h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  margin-bottom: var(--space-md);
+}
+
+.status-card .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.status-card .status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background-color: var(--color-success);
+  box-shadow: 0 0 6px rgba(45, 106, 79, 0.5);
+}
+
+.status-dot.disconnected {
+  background-color: var(--color-error);
+  box-shadow: 0 0 6px rgba(230, 57, 70, 0.5);
+}
+
+.status-dot.loading {
+  background-color: var(--color-warning);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-label {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+.status-details {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.service-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.service-name {
+  color: var(--color-text-light);
+}
+
+.service-status {
+  font-weight: 600;
+}
+
+.service-status.ready {
+  color: var(--color-success);
+}
+
+.service-status.missing {
+  color: var(--color-error);
+}
+
+/* --- Check button --- */
+.check-btn {
+  display: block;
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  margin-top: var(--space-md);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.check-btn:hover {
+  background: var(--color-primary-light);
+}
+
+.check-btn:active {
+  transform: scale(0.98);
+}
+
+.check-btn:disabled {
+  background: var(--color-text-light);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Error message --- */
+.error-msg {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Latency display --- */
+.latency {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  text-align: center;
+  margin-top: var(--space-sm);
+}
+
+/* --- Footer --- */
+.app-footer {
+  text-align: center;
+  padding: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  border-top: 1px solid var(--color-border);
+}
