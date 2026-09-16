@@ -67,19 +67,17 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
 
   console.log(`🤖 Diagnosis request (${mimeType}, base64 length: ${base64Image.length})...`);
 
-  // Provider chain for vision diagnosis. Qwen 3.8-27b via Groq goes first:
-  // it is multimodal (just not advertised as such in Groq's model list),
-  // returns strict JSON, answers in ~1-2s, and has ~1k req/day free — far
-  // more than any single Gemini model bucket. Gemini models follow as
-  // failover, each with its own daily quota.
-  const attempts = [];
-  if (process.env.GROQ_API_KEY) {
-    attempts.push({
-      provider: `groq:${process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b'}`,
-      run: () => groqVisionDiagnose(base64Image, mimeType),
-    });
-  }
-  if (process.env.GEMINI_API_KEY) {
+  // Provider chain for vision diagnosis. GEMINI goes FIRST (best
+  // agronomic precision on subtle leaf symptoms); the chain then fails
+  // over to Groq's Qwen 3.8-27b (multimodal, ~1k req/day free, fast
+  // strict-JSON) and further Gemini models, each with its own daily
+  // quota. Order is controlled by DIAGNOSIS_PROVIDER_ORDER if needed.
+  const geminiFirst = (process.env.DIAGNOSIS_PROVIDER_ORDER || 'gemini,groq')
+    .toLowerCase()
+    .split(',')
+    .map((s) => s.trim());
+
+  const geminiAttempt = () => {
     const ai = new GoogleGenAI({ apiKey });
     const visionModels = [
       process.env.GEMINI_VISION_MODEL_1 || 'gemini-3.6-flash',
@@ -92,6 +90,21 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
         run: () => geminiVisionCall(ai, model, base64Image, mimeType),
       });
     }
+  };
+
+  const groqAttempt = () => {
+    if (process.env.GROQ_API_KEY) {
+      attempts.push({
+        provider: `groq:${process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b'}`,
+        run: () => groqVisionDiagnose(base64Image, mimeType),
+      });
+    }
+  };
+
+  const attempts = [];
+  for (const p of geminiFirst) {
+    if (p === 'gemini') geminiAttempt();
+    else if (p === 'groq') groqAttempt();
   }
 
   if (attempts.length === 0) {
