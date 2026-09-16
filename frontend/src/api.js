@@ -3,7 +3,7 @@
  * Uses the Vite proxy in dev (/api/...) or a configured VITE_API_URL in prod.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+export const API_BASE = import.meta.env.VITE_API_URL || '';
 
 /**
  * Calls the /api/health endpoint to verify backend connectivity.

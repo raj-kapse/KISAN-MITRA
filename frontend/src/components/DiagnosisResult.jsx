@@ -83,6 +83,16 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
         </div>
       )}
 
+      {/* Yield Risk */}
+      {!isHealthy && diagnosis.yield_risk && (
+        <div className="info-row yield-risk-row">
+          <span className="info-label">{isHi ? 'आर्थिक जोखिम' : 'Economic Risk'}</span>
+          <span className="yield-risk-badge">
+            ⚠️ {isHi ? (diagnosis.yield_risk_hi || diagnosis.yield_risk) : diagnosis.yield_risk}
+          </span>
+        </div>
+      )}
+
       {/* Description */}
       {displayDesc && (
         <div className="diagnosis-section">
@@ -142,6 +152,25 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
           }
         </div>
       )}
+
+      {/* Action Bar: WhatsApp and Print */}
+      <div className="diagnosis-actions no-print">
+        <button 
+          className="action-btn whatsapp-btn" 
+          onClick={() => {
+            const text = `🌾 Kisan Mitra Report\nCrop: ${crop_type || 'Unknown'}\nDiagnosis: ${displayName}\nConfidence: ${confPercent}%\n\nAdvice:\n${displayDesc}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+          }}
+        >
+          {isHi ? '💬 WhatsApp पर शेयर करें' : '💬 Share on WhatsApp'}
+        </button>
+        <button 
+          className="action-btn print-btn" 
+          onClick={() => window.print()}
+        >
+          {isHi ? '🖨️ रिपोर्ट डाउनलोड/प्रिंट करें' : '🖨️ Download/Print Report'}
+        </button>
+      </div>
     </div>
   );
 }

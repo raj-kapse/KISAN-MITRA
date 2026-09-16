@@ -45,12 +45,14 @@ const weatherRoutes = require('./routes/weather');
 const weatherAdvisoryRoutes = require('./routes/weatherAdvisory');
 const historyRoutes = require('./routes/history');
 const storesRoutes = require('./routes/stores');
+const chatRoutes = require('./routes/chat');
 
 app.use('/api', diagnoseRoutes);
 app.use('/api', weatherRoutes);
 app.use('/api', weatherAdvisoryRoutes);
 app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
+app.use('/api', chatRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

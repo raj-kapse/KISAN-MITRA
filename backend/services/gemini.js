@@ -33,7 +33,9 @@ Exact JSON Structure:
     "preventive": "string — preventive measures and agronomic practices to prevent recurrence",
     "preventive_hi": "string — Hindi translation of preventive measures"
   },
-  "crop_type": "string — identified crop (e.g. tomato, wheat, rice, potato, cotton, mustard)"
+  "crop_type": "string — identified crop (e.g. tomato, wheat, rice, potato, cotton, mustard)",
+  "yield_risk": "string — economic/yield loss if untreated (e.g. '30-40% yield loss')",
+  "yield_risk_hi": "string — Hindi translation of yield_risk"
 }
 
 Guidelines:
@@ -166,7 +168,38 @@ Do not hallucinate. Be direct and actionable.`;
   }
 }
 
+/**
+ * Chatbot interface for Kisan Mitra
+ */
+async function chatWithGemini(messages, systemContext) {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    // Convert history to Gemini format
+    const contents = messages.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+
+    // Inject system context into the first message
+    if (contents.length > 0 && contents[0].role === 'user') {
+      contents[0].parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${contents[0].parts[0].text}`;
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: contents
+    });
+
+    return response.text.trim();
+  } catch (error) {
+    console.error('Gemini Chat Error:', error);
+    throw new Error('Failed to respond to chat');
+  }
+}
+
 module.exports = {
   diagnoseCropDisease,
-  generateWeatherAdvisory
+  generateWeatherAdvisory,
+  chatWithGemini
 };

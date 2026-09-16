@@ -14,6 +14,7 @@ import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
 import VoiceButton from './components/VoiceButton';
 import ScanHistory from './components/ScanHistory';
+import Chatbot from './components/Chatbot';
 import { diagnoseCrop, saveScanHistory } from './api';
 import './App.css';
 
@@ -195,6 +196,9 @@ function App() {
           : 'Kisan Mitra · AI-powered crop advisory for Indian farmers'
         }
       </footer>
+
+      {/* Floating Chatbot */}
+      <Chatbot diagnosis={diagnosis} lang={lang} />
     </div>
   );
 }

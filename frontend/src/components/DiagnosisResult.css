@@ -209,3 +209,83 @@
   font-weight: 500;
   border-top: 1px solid var(--color-border);
 }
+
+.yield-risk-row {
+  background: #fff5f5;
+  border-bottom: 1px solid #fed7d7;
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.yield-risk-badge {
+  font-weight: 700;
+  color: #c53030;
+  font-size: var(--font-size-sm);
+}
+
+/* --- Action Bar --- */
+.diagnosis-actions {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+
+.action-btn {
+  flex: 1;
+  padding: var(--space-sm) var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  font-family: inherit;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.whatsapp-btn {
+  background: #25D366;
+  color: white;
+}
+
+.whatsapp-btn:hover {
+  background: #20bd5a;
+}
+
+.print-btn {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.print-btn:hover {
+  background: #d1d5db;
+}
+
+/* --- Print Styles --- */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .diagnosis-result, .diagnosis-result * {
+    visibility: visible;
+  }
+  
+  .diagnosis-result {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+  
+  .no-print, .store-locator-btn, .store-locator-results {
+    display: none !important;
+  }
+}
