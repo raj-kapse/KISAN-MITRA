@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { generateWeatherAdvisory } = require('../services/gemini');
+const { chatComplete } = require('../services/textProvider');
 
 /**
  * POST /api/weather-advisory
@@ -14,9 +14,24 @@ router.post('/weather-advisory', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing diagnosis or weather data' });
     }
 
-    const advice = await generateWeatherAdvisory(diagnosis, weather, lang || 'en');
-    
-    res.json({ success: true, advice });
+    const langLine = (lang || 'en') === 'hi'
+      ? 'Respond strictly in Hindi (Devanagari script).'
+      : 'Respond in English.';
+    const { text: advice, provider } = await chatComplete(
+      [
+        {
+          role: 'user',
+          content: `You are an expert agricultural advisor for Indian farmers.
+The farmer's crop has been diagnosed with: ${diagnosis.disease_name} (${diagnosis.crop_type || 'unknown crop'}).
+The current weather is: ${weather.temp}°C, ${weather.description}, humidity ${weather.humidity}%.
+
+Provide exactly 2-3 sentences of critical farming advice combining the disease and the weather. Do not hallucinate. Be direct and actionable. ${langLine}`,
+        },
+      ],
+      'You are Kisan Mitra, an expert agricultural advisor for Indian farmers. Be concise, practical, and truthful.'
+    );
+
+    res.json({ success: true, advice, provider });
   } catch (error) {
     console.error('Weather Advisory Error:', error);
     res.status(500).json({ success: false, error: 'Failed to generate combined AI advisory' });

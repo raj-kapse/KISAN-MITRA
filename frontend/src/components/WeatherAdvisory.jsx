@@ -1,14 +1,20 @@
 /**
  * WeatherAdvisory — Displays weather data + crop advisory
  *
- * Requests browser geolocation, calls /api/weather, shows:
+ * Gets the farmer's location two ways:
+ * 1. Browser geolocation (preferred)
+ * 2. Manual fallback: city-name search via /api/geocode when geolocation
+ *    is denied, unavailable, or times out — the feature never dead-ends.
+ *
+ * Shows:
  * - Current conditions (temp, humidity, wind, description)
  * - 5-day forecast cards
- * - Crop-specific guidance based on conditions
+ * - Crop-specific guidance: AI combined advisory when a diagnosis exists,
+ *   otherwise rule-based tips
  */
 
-import { useState, useEffect } from 'react';
-import { getWeather, getAiWeatherAdvisory } from '../api';
+import { useState, useEffect, useCallback } from 'react';
+import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
 import './WeatherAdvisory.css';
 
 function WeatherAdvisory({ lang = 'en', diagnosis }) {
@@ -17,19 +23,24 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [cityQuery, setCityQuery] = useState('');
+  const [manualError, setManualError] = useState(null);
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualCity, setManualCity] = useState(null);
 
-  useEffect(() => {
-    fetchWeatherAndAdvice();
-  }, [diagnosis]);
-
-  const fetchWeatherAndAdvice = async () => {
+  const fetchWeatherAndAdvice = useCallback(async () => {
     setLoading(true);
     setError(null);
     setAiAdvice(null);
 
     try {
-      // Request browser geolocation
+      // Request browser geolocation (skipped when we already picked a city manually)
       const position = await new Promise((resolve, reject) => {
+        if (manualCity) {
+          resolve({ coords: { latitude: manualCity.lat, longitude: manualCity.lon } });
+          return;
+        }
         if (!navigator.geolocation) {
           reject(new Error('Geolocation not supported by your browser.'));
           return;
@@ -50,7 +61,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
       if (!weatherResult.success) {
         throw new Error(weatherResult.error || 'Failed to fetch weather data');
       }
-      
+
       setWeather({ current: weatherResult.current, forecast: weatherResult.forecast });
 
       // If we have a diagnosis, fetch combined AI advice!
@@ -66,12 +77,40 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
     } finally {
       setLoading(false);
     }
+  }, [manualCity, diagnosis, lang]);
+
+  // (Re)fetch whenever a diagnosis arrives, the language changes, or a
+  // manual city is chosen — the effect deps cover all three.
+  useEffect(() => {
+    fetchWeatherAndAdvice();
+  }, [fetchWeatherAndAdvice]);
+
+  /** Manual city fallback — resolve city name to coordinates, then fetch weather */
+  const handleManualSearch = async (e) => {
+    e.preventDefault();
+    const q = cityQuery.trim();
+    if (!q || manualLoading) return;
+
+    setManualLoading(true);
+    setManualError(null);
+    try {
+      const loc = await geocodeCity(q);
+      setManualCity(loc); // triggers the fetch effect with the new coordinates
+      setCityQuery('');
+      setShowManualInput(false);
+    } catch (err) {
+      setManualError(err.message);
+    } finally {
+      setManualLoading(false);
+    }
   };
+
+  const isHi = lang === 'hi';
 
   if (loading) {
     return (
       <div className="weather-card loading-state">
-        <span className="spinner" /> Fetching weather for your location…
+        <span className="spinner" /> {isHi ? 'आपके स्थान के लिए मौसम लाया जा रहा है…' : 'Fetching weather for your location…'}
       </div>
     );
   }
@@ -81,10 +120,32 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
       <div className="weather-card error-state">
         <p>🌦️ {error}</p>
         {locationDenied ? (
-          <small>Enable location in your browser settings and reload.</small>
+          <small>{isHi ? 'स्थान की अनुमति बंद है — नीचे अपने शहर का नाम डालें।' : 'Location permission is off — search your city by name below.'}</small>
         ) : (
-          <button className="retry-btn" onClick={fetchWeather}>Retry</button>
+          <button className="retry-btn" onClick={fetchWeatherAndAdvice}>
+            {isHi ? 'पुनः प्रयास करें' : 'Retry'}
+          </button>
         )}
+        {!showManualInput && (
+          <button className="retry-btn manual-toggle" onClick={() => { setShowManualInput(true); setManualError(null); }}>
+            {isHi ? '🏙️ शहर खोजें' : '🏙️ Search by city'}
+          </button>
+        )}
+        {showManualInput && (
+          <form className="manual-city-form" onSubmit={handleManualSearch}>
+            <input
+              type="text"
+              value={cityQuery}
+              onChange={(e) => setCityQuery(e.target.value)}
+              placeholder={isHi ? 'जैसे: नाशिक या Nashik' : 'e.g. Nashik'}
+              autoFocus
+            />
+            <button type="submit" disabled={manualLoading || !cityQuery.trim()}>
+              {manualLoading ? '…' : (isHi ? 'खोजें' : 'Search')}
+            </button>
+          </form>
+        )}
+        {manualError && <small className="manual-error">{manualError}</small>}
       </div>
     );
   }
@@ -92,11 +153,13 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
   if (!weather) return null;
 
   const { current, forecast } = weather;
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = isHi
+    ? ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div className="weather-card">
-      <h3 className="weather-title">🌦️ {lang === 'hi' ? 'मौसम सलाह' : 'Weather Advisory'}</h3>
+      <h3 className="weather-title">🌦️ {isHi ? 'मौसम सलाह' : 'Weather Advisory'}</h3>
 
       {/* Current conditions */}
       {current && (
@@ -105,12 +168,14 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
             <span className="current-temp">{current.temp}°C</span>
             <div className="current-details">
               <span>{current.description}</span>
-              {current.city && <span className="city-name">📍 {current.city}</span>}
+              {(current.city || manualCity?.name) && (
+                <span className="city-name">📍 {current.city || `${manualCity.name}${manualCity.state ? ', ' + manualCity.state : ''}`}</span>
+              )}
             </div>
           </div>
           <div className="current-stats">
             <span>💧 {current.humidity}%</span>
-            <span>🌡️ Feels {current.feels_like}°C</span>
+            <span>🌡️ {isHi ? 'महसूस' : 'Feels'} {current.feels_like}°C</span>
             {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
           </div>
         </div>
@@ -136,12 +201,12 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
       {/* AI Combined Crop Advisory (Phase 3 Requirement) */}
       {aiAdvice ? (
         <div className="crop-advice ai-advice">
-          <h4>{lang === 'hi' ? '🤖 AI फसल एवं मौसम सुझाव' : '🤖 AI Crop & Weather Advisory'}</h4>
+          <h4>{isHi ? '🤖 AI फसल एवं मौसम सुझाव' : '🤖 AI Crop & Weather Advisory'}</h4>
           <p>{aiAdvice}</p>
         </div>
       ) : (
         <div className="crop-advice">
-          <h4>{lang === 'hi' ? '🌾 सामान्य मौसम सुझाव' : '🌾 General Weather Advice'}</h4>
+          <h4>{isHi ? '🌾 सामान्य मौसम सुझाव' : '🌾 General Weather Advice'}</h4>
           <ul>
             {getCropAdvice(current, forecast).map((tip, i) => (
               <li key={i}>{tip}</li>
@@ -149,8 +214,56 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
           </ul>
         </div>
       )}
+
+      {/* Location switcher — always available after a successful load */}
+      <button
+        className="location-switch no-print"
+        onClick={() => { setShowManualInput(true); setManualError(null); setError(null); }}
+      >
+        {isHi ? '📍 स्थान बदलें' : '📍 Change location'}
+      </button>
+
+      {showManualInput && weather && (
+        <form className="manual-city-form" onSubmit={handleManualSearch}>
+          <input
+            type="text"
+            value={cityQuery}
+            onChange={(e) => setCityQuery(e.target.value)}
+            placeholder={isHi ? 'जैसे: नाशिक या Nashik' : 'e.g. Nashik'}
+            autoFocus
+          />
+          <button type="submit" disabled={manualLoading || !cityQuery.trim()}>
+            {manualLoading ? '…' : (isHi ? 'खोजें' : 'Search')}
+          </button>
+        </form>
+      )}
+      {manualError && weather && <small className="manual-error">{manualError}</small>}
     </div>
   );
+}
+
+/** Rule-based tips when no AI advisory is available. */
+function getCropAdvice(current, forecast) {
+  const tips = [];
+  if (!current) return tips;
+
+  if (current.humidity > 80) {
+    tips.push('High humidity — watch for fungal outbreaks; consider preventive fungicide spray.');
+  }
+  if (current.wind_speed && current.wind_speed > 10) {
+    tips.push('Strong winds — avoid pesticide spraying today; drift will reduce effectiveness.');
+  }
+  if (current.temp > 35) {
+    tips.push('Heat stress likely — irrigate in the early morning or evening, not midday.');
+  }
+  const rainSoon = (forecast || []).slice(0, 3).some(d => d.rain_probability >= 60);
+  if (rainSoon) {
+    tips.push('Rain likely within 3 days — delay fertilizer/pesticide application so it is not washed away.');
+  }
+  if (tips.length === 0) {
+    tips.push('Conditions are stable — a good window for field work and spraying.');
+  }
+  return tips;
 }
 
 export default WeatherAdvisory;

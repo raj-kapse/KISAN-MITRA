@@ -1,23 +1,33 @@
 # 🌾 Kisan Mitra — AI Crop Health & Advisory App
 
 > **Instant crop disease diagnosis and hyper-local weather advisory for Indian farmers, powered by Google Gemini's multimodal AI.**
+>
+> Built for the hackathon problem statements:
+> - **AG-01** — Smart crop disease detection using image processing and machine learning
+> - **AG-02** — Localized weather forecasts and crop recommendations for farmers
 
 ## What It Does
 
-A farmer photographs a crop leaf → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with crop-specific guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — Gemini handles the vision + language in a single API call.
+A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — Gemini handles the vision + language in a single API call.
 
 ## Key Features
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| 📷 Leaf Disease Detection | ✅ Working | Upload/capture a leaf photo → AI diagnosis in <5 seconds |
+| 📷 Leaf Disease Detection | ✅ Working | Upload/capture a leaf photo → AI diagnosis in seconds |
+| 🖼️ Client-side Image Processing | ✅ Working | Canvas downscale to 1024px + JPEG compression before upload — faster on rural bandwidth |
 | 💊 Treatment Recommendations | ✅ Working | Chemical, organic, and preventive options with dosages |
-| 🌦️ Weather Advisory | ✅ Working | Current conditions + 5-day forecast, crop-specific guidance |
+| ⚠️ Yield Risk Estimate | ✅ Working | Economic loss if the disease goes untreated |
+| 🌦️ Weather Advisory | ✅ Working | Current conditions + 5-day forecast, with AI-combined disease + weather guidance |
+| 🏙️ Manual Location Fallback | ✅ Working | City-name search when geolocation is denied — the feature never dead-ends |
 | 🗣️ Bilingual Output | ✅ Working | English + Hindi toggle for all diagnosis and treatment text |
 | 🔊 Voice Read-Aloud | ✅ Working | Web Speech API TTS in Hindi or English |
-| 📜 Scan History | ✅ Working | Past diagnoses saved to Firestore, viewable in-app |
-| ⚠️ Confidence Warnings | ✅ Working | Low-confidence results flagged with "consult an expert" |
-| 📱 Mobile-First PWA | ✅ Working | Installable, works on low-end Android devices |
+| 🤖 Context-aware Chatbot | ✅ Working | Floating assistant that knows your latest scan and answers follow-ups |
+| 🏪 Nearby Agri-stores | ✅ Working | OpenStreetMap lookup of agrochemical/farm shops within 20 km |
+| 📜 Scan History | ✅ Working | Past diagnoses saved to Firestore, **scoped per device** (privacy) |
+| 💬 WhatsApp / PDF Export | ✅ Working | Share the report with an extension officer or print to PDF |
+| 📱 Offline-capable PWA | ✅ Working | Installable, service worker precache, works on low-end Android |
+| 🛡️ Quota Protection | ✅ Working | Rate limiting on AI/weather endpoints, coordinate validation on all geo routes |
 
 ## Tech Stack
 
@@ -25,19 +35,21 @@ A farmer photographs a crop leaf → the app identifies the disease in seconds, 
 |-------|-----------|-----|
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
-| **AI Engine** | Google Gemini 2.5 Flash (multimodal) | No model hosting needed — one API call returns diagnosis + confidence + treatment + Hindi translation as structured JSON |
-| **Weather** | OpenWeatherMap | Free tier, 5-day forecast, metric units |
-| **Database** | Firebase / Firestore | Real-time, free tier, no server-side DB management |
+| **AI Engine** | Google Gemini 3.6 Flash (multimodal) | No model hosting needed — one API call returns diagnosis + confidence + treatment + Hindi translation as structured JSON |
+| **Weather** | OpenWeatherMap | Free tier, 5-day forecast, geocoding for city fallback, metric units |
+| **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
+| **Stores** | OpenStreetMap Overpass API | Free, no API key, farm-shop POIs |
 
 ### Why Gemini Instead of a Custom Model
 
 Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) on labeled datasets like PlantVillage, hosting the model, and maintaining a fixed set of disease classes. We chose a different approach:
 
-- **Gemini's multimodal API** accepts a raw leaf image and returns a diagnosis directly — no training pipeline, no model weights to manage, no GPU hosting
-- A single API call returns disease name, confidence, severity, symptoms, treatment options, and crop identification — all as structured JSON
+- **Gemini's multimodal API** (3.6 Flash) accepts a raw leaf image and returns a diagnosis directly — no training pipeline, no model weights to manage, no GPU hosting
+- A single API call returns disease name, confidence, severity, symptoms, treatment options, yield risk, and crop identification — all as structured JSON
 - Hindi translations are generated in the same call, not through a separate translation layer
 - The model generalises to crops and diseases beyond any fixed training set
+- Client-side canvas preprocessing (resize/compress) keeps uploads fast on rural networks
 - Trade-off: requires network connectivity and depends on Gemini's availability. For a hackathon prototype targeting connected users, this is the right call
 
 ## Quick Start
@@ -68,12 +80,13 @@ npm run dev             # http://localhost:5173
 
 ### Environment Variables
 
-Create `backend/.env`:
+Create `backend/.env` (see `backend/.env.example`):
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 OPENWEATHER_API_KEY=your_openweather_api_key
 FIREBASE_PROJECT_ID=your_firebase_project_id   # optional
+FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json  # optional
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
@@ -84,37 +97,46 @@ FRONTEND_URL=http://localhost:5173
 ```
 kisan-mitra/
 ├── backend/
-│   ├── server.js                # Express entry point
+│   ├── server.js                # Express entry point + rate limiting
+│   ├── middleware/
+│   │   └── rateLimit.js         # In-memory per-IP rate limiter (no deps)
 │   ├── routes/
-│   │   ├── health.js            # GET /api/health
+│   │   ├── health.js            # GET  /api/health, /api/ping
 │   │   ├── diagnose.js          # POST /api/diagnose (image upload → Gemini)
-│   │   ├── weather.js           # GET /api/weather?lat=&lon=
-│   │   └── history.js           # GET/POST /api/history
+│   │   ├── weather.js           # GET  /api/weather?lat=&lon=
+│   │   ├── weatherAdvisory.js   # POST /api/weather-advisory (diagnosis + weather → Gemini)
+│   │   ├── geocode.js           # GET  /api/geocode?q=<city> (manual location fallback)
+│   │   ├── history.js           # GET/POST /api/history (device-scoped)
+│   │   ├── stores.js            # GET  /api/stores?lat=&lon= (Overpass)
+│   │   └── chat.js              # POST /api/chat (context-aware assistant)
 │   ├── services/
-│   │   ├── gemini.js            # Gemini 2.5 Flash multimodal client
-│   │   └── firebase.js          # Firestore initialisation
+│   │   ├── gemini.js            # Gemini 3.6 Flash client: diagnosis, advisory, chat
+│   │   └── firebase.js          # Firestore init + per-device scan queries
 │   ├── .env.example
 │   └── package.json
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx              # Main app — scan flow
-│   │   ├── api.js               # Backend API client
+│   │   ├── App.jsx              # Main app — scan flow, tabs, language toggle
+│   │   ├── api.js               # Backend API client + device ID
 │   │   ├── components/
-│   │   │   ├── CameraCapture.jsx    # Photo capture / upload
-│   │   │   ├── DiagnosisResult.jsx  # Disease card + treatment
-│   │   │   ├── WeatherAdvisory.jsx  # Weather display + crop guidance
-│   │   │   ├── ScanHistory.jsx      # Past diagnosis list
+│   │   │   ├── CameraCapture.jsx    # Camera/upload + client-side compression
+│   │   │   ├── DiagnosisResult.jsx  # Disease card + treatment + share/export
+│   │   │   ├── WeatherAdvisory.jsx  # Weather + AI advice + city fallback
+│   │   │   ├── AgriStoreLocator.jsx # Nearby agri-stores
+│   │   │   ├── ScanHistory.jsx      # Per-device history view
+│   │   │   ├── Chatbot.jsx          # Floating context-aware assistant
 │   │   │   └── VoiceButton.jsx      # TTS read-aloud
 │   │   ├── index.css            # Global styles
 │   │   └── App.css              # Component styles
 │   ├── public/
 │   │   ├── manifest.json        # PWA manifest
-│   │   └── favicon.svg
-│   ├── vite.config.js           # Vite config with /api proxy
+│   │   ├── favicon.svg, icon-192.png, icon-512.png
+│   │   └── samples/             # Demo sample leaf images
+│   ├── vite.config.js           # Vite config with /api proxy + PWA plugin
 │   └── package.json
 │
-├── .gitignore
+├── LICENSE                       # MIT
 └── README.md
 ```
 
@@ -123,10 +145,15 @@ kisan-mitra/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/health` | GET | Server status + API key config check |
-| `/api/diagnose` | POST | Upload image (multipart, field: `image`) → AI diagnosis JSON |
-| `/api/weather?lat=&lon=` | GET | Current weather + 5-day forecast for coordinates |
-| `/api/history` | GET | Retrieve past scan history |
-| `/api/history` | POST | Save a diagnosis to Firestore |
+| `/api/ping` | GET | Minimal latency check |
+| `/api/diagnose` | POST | Upload image (multipart, field: `image`) → AI diagnosis JSON *(rate-limited)* |
+| `/api/weather?lat=&lon=` | GET | Current weather + 5-day forecast *(rate-limited)* |
+| `/api/weather-advisory` | POST | Diagnosis + weather → combined AI guidance *(rate-limited)* |
+| `/api/geocode?q=` | GET | City name → coordinates (manual location fallback) |
+| `/api/history` | GET | Recent scans (`?deviceId=` scopes to one device) |
+| `/api/history` | POST | Save a diagnosis (`deviceId` in body) |
+| `/api/stores?lat=&lon=` | GET | Nearby agricultural stores within 20 km |
+| `/api/chat` | POST | Context-aware chatbot reply *(rate-limited)* |
 
 ### Diagnosis Response Shape
 
@@ -149,10 +176,22 @@ kisan-mitra/
       "preventive": "Ensure proper spacing ...",
       "preventive_hi": "..."
     },
-    "crop_type": "Tomato"
+    "crop_type": "Tomato",
+    "yield_risk": "30-40% yield loss if untreated",
+    "yield_risk_hi": "..."
   }
 }
 ```
+
+Non-plant images return `disease_name: "Invalid Image"` instead of an error, and low-confidence results (<50%) trigger a "consult a local expert" warning in the UI.
+
+## Hackathon Topic Coverage
+
+**AG-01 — Smart crop disease detection (image processing + ML):**
+client-side canvas preprocessing (resize/compress) → Gemini 3.6 Flash multimodal classification → structured severity/confidence/treatment output with bilingual delivery and export.
+
+**AG-02 — Localized weather forecasts + crop recommendations:**
+geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecast → prompt-chained Gemini advisory that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
 
 ## Contributors
 

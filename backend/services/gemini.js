@@ -2,7 +2,7 @@
  * Gemini AI Service — Kisan Mitra
  * 
  * Multimodal crop disease detection service using Google Gen AI SDK (@google/genai)
- * and the Gemini 2.5 Flash model.
+ * and the Gemini 3.6 Flash model.
  */
 
 const { GoogleGenAI } = require('@google/genai');
@@ -65,54 +65,57 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   // Convert buffer to base64 string for Gemini inlineData
   const base64Image = imageBuffer.toString('base64');
 
-  console.log(`🤖 Initializing Gemini 2.5 Flash diagnosis (${mimeType}, base64 length: ${base64Image.length})...`);
+  console.log(`🤖 Diagnosis request (${mimeType}, base64 length: ${base64Image.length})...`);
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  // Retry logic for transient spikes (503 high demand / 429 rate limits)
-  const maxRetries = 3;
-  let response;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType, data: base64Image } },
-            { text: CROP_DIAGNOSIS_PROMPT }
-          ]
-        }],
-        config: {
-          responseMimeType: 'application/json'
-        }
+  // Provider chain for vision diagnosis. Qwen 3.8-27b via Groq goes first:
+  // it is multimodal (just not advertised as such in Groq's model list),
+  // returns strict JSON, answers in ~1-2s, and has ~1k req/day free — far
+  // more than any single Gemini model bucket. Gemini models follow as
+  // failover, each with its own daily quota.
+  const attempts = [];
+  if (process.env.GROQ_API_KEY) {
+    attempts.push({
+      provider: `groq:${process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b'}`,
+      run: () => groqVisionDiagnose(base64Image, mimeType),
+    });
+  }
+  if (process.env.GEMINI_API_KEY) {
+    const ai = new GoogleGenAI({ apiKey });
+    const visionModels = [
+      process.env.GEMINI_VISION_MODEL_1 || 'gemini-3.6-flash',
+      process.env.GEMINI_VISION_MODEL_2 || 'gemini-3.5-flash-lite',
+      process.env.GEMINI_VISION_MODEL_3 || 'gemini-3.5-flash',
+    ];
+    for (const model of visionModels) {
+      attempts.push({
+        provider: model,
+        run: () => geminiVisionCall(ai, model, base64Image, mimeType),
       });
-      break; // Success, proceed with response
-    } catch (apiError) {
-      const isTransient =
-        apiError.status === 503 ||
-        apiError.status === 429 ||
-        (apiError.message &&
-          (apiError.message.includes('503') ||
-            apiError.message.includes('high demand') ||
-            apiError.message.includes('ResourceExhausted')));
-
-      if (isTransient && attempt < maxRetries) {
-        const backoffMs = attempt * 1500;
-        console.warn(
-          `⚠️ Gemini API temporary demand spike (attempt ${attempt}/${maxRetries}). Retrying in ${backoffMs}ms...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, backoffMs));
-      } else {
-        throw apiError;
-      }
     }
   }
 
-  const responseText = response?.text;
+  if (attempts.length === 0) {
+    throw new Error('No AI provider configured. Set GROQ_API_KEY and/or GEMINI_API_KEY in backend/.env');
+  }
+
+  let responseText = null;
+  let lastError = null;
+  let servedBy = null;
+
+  for (const attempt of attempts) {
+    try {
+      responseText = await attempt.run();
+      servedBy = attempt.provider;
+      console.log(`✅ Diagnosis served by ${servedBy}`);
+      break;
+    } catch (err) {
+      console.warn(`↪️ [${attempt.provider}] failed: ${err.message} — trying next provider...`);
+      lastError = err;
+    }
+  }
+
   if (!responseText) {
-    throw new Error('Empty response received from Gemini model.');
+    throw lastError ? friendlyGeminiError(lastError) : new Error('All diagnosis providers failed.');
   }
 
   // Clean and parse JSON response
@@ -139,6 +142,109 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
 }
 
 /**
+ * Groq vision diagnosis — OpenAI-compatible chat-completions with a
+ * base64 data-URL image. Qwen 3.8-27b returns the same strict JSON the
+ * Gemini prompt demands (response_format: json_object).
+ */
+async function groqVisionDiagnose(base64Image, mimeType) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY not set');
+  const model = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } },
+          { type: 'text', text: CROP_DIAGNOSIS_PROMPT },
+        ],
+      }],
+      response_format: { type: 'json_object' },
+      max_tokens: 1200,
+      temperature: 0.2,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Groq ${res.status}: ${body.slice(0, 150)}`);
+  }
+
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from Groq vision');
+  return content;
+}
+
+/** One Gemini vision call with the JSON prompt. Transient errors propagate to the chain. */
+async function geminiVisionCall(ai, model, base64Image, mimeType) {
+  const maxRetries = 2;
+  let lastErr;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data: base64Image } },
+            { text: CROP_DIAGNOSIS_PROMPT },
+          ],
+        }],
+        config: { responseMimeType: 'application/json' },
+      });
+      if (!response.text) throw new Error(`Empty response from ${model}`);
+      return response.text;
+    } catch (err) {
+      lastErr = err;
+      const transient = err.status === 503 || err.status === 429 ||
+        /high demand|ResourceExhausted|overload/i.test(err.message || '');
+      if (transient && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, attempt * 1500));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastErr;
+}
+
+/**
+ * Map raw googleapis errors to farmer/judge-friendly messages.
+ * The raw JSON blobs are useless in a demo.
+ */
+function friendlyGeminiError(apiError) {
+  const msg = apiError.message || '';
+  if (
+    apiError.status === 400 ||
+    apiError.status === 401 ||
+    apiError.status === 403 ||
+    /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)
+  ) {
+    return new Error(
+      'Gemini API key is invalid or missing. Set a valid GEMINI_API_KEY in backend/.env'
+    );
+  }
+  if (
+    apiError.status === 503 ||
+    apiError.status === 429 ||
+    /overload|high demand|ResourceExhausted|unavailable/i.test(msg)
+  ) {
+    return new Error(
+      'All Gemini vision models are busy or out of daily quota right now. Please try again in a little while.'
+    );
+  }
+  return apiError;
+}
+
+/**
  * Generate a highly contextual piece of advice based on BOTH the disease and the weather.
  */
 async function generateWeatherAdvisory(diagnosis, weather, lang) {
@@ -157,7 +263,7 @@ Do not hallucinate. Be direct and actionable.`;
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: promptText
     });
 
@@ -181,13 +287,16 @@ async function chatWithGemini(messages, systemContext) {
       parts: [{ text: msg.content }]
     }));
 
-    // Inject system context into the first message
-    if (contents.length > 0 && contents[0].role === 'user') {
-      contents[0].parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${contents[0].parts[0].text}`;
+    // Inject system context into the first USER message.
+    // The chat always opens with a model greeting, so the first message
+    // is 'model' — find the first user turn instead of assuming index 0.
+    const firstUser = contents.find(m => m.role === 'user');
+    if (firstUser) {
+      firstUser.parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${firstUser.parts[0].text}`;
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: contents
     });
 

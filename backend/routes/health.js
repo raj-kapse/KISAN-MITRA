@@ -20,6 +20,10 @@ router.get('/health', (req, res) => {
         configured: !!process.env.GEMINI_API_KEY,
         status: process.env.GEMINI_API_KEY ? 'ready' : 'missing_key',
       },
+      groq: {
+        configured: !!process.env.GROQ_API_KEY,
+        status: process.env.GROQ_API_KEY ? 'ready' : 'missing_key',
+      },
       openweather: {
         configured: !!process.env.OPENWEATHER_API_KEY,
         status: process.env.OPENWEATHER_API_KEY ? 'ready' : 'missing_key',

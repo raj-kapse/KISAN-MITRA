@@ -133,6 +133,7 @@ function App() {
                   onImageSelected={handleImageSelected}
                   disabled={loading}
                   isLoading={loading}
+                  lang={lang}
                 />
 
                 {selectedImage && (
