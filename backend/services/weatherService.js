@@ -67,24 +67,33 @@ async function fetchFromOpenWeather(lat, lon, apiKey) {
   const current = await currentRes.json();
   const forecastRaw = await forecastRes.json();
 
-  // Forecast returns 3-hour chunks; reduce to one entry per day
+  // Forecast returns 3-hour chunks. Aggregate ALL of a day's chunks:
+  // a single chunk's temp_min/temp_max mirror that instant, so keeping
+  // only the first chunk produced forecasts like "23–23°" for every day.
   const byDay = new Map();
   for (const item of forecastRaw.list || []) {
     const date = item.dt_txt.split(' ')[0];
-    if (!byDay.has(date)) byDay.set(date, item);
+    if (!byDay.has(date)) byDay.set(date, []);
+    byDay.get(date).push(item);
   }
 
-  const forecast = Array.from(byDay.values())
+  const forecast = Array.from(byDay.entries())
     .slice(0, 5)
-    .map((item) => ({
-      date: item.dt_txt.split(' ')[0],
-      temp_min: Math.round(item.main.temp_min),
-      temp_max: Math.round(item.main.temp_max),
-      humidity: item.main.humidity,
-      description: item.weather?.[0]?.description || '',
-      rain_probability: item.pop ? Math.round(item.pop * 100) : 0,
-      wind_speed: item.wind?.speed ?? null,
-    }));
+    .map(([date, items]) => {
+      const midday =
+        items.find((i) => i.dt_txt.includes('12:00:00')) ||
+        items[Math.floor(items.length / 2)];
+      const winds = items.map((i) => i.wind?.speed).filter((w) => w != null);
+      return {
+        date,
+        temp_min: Math.round(Math.min(...items.map((i) => i.main.temp_min))),
+        temp_max: Math.round(Math.max(...items.map((i) => i.main.temp_max))),
+        humidity: Math.round(items.reduce((s, i) => s + i.main.humidity, 0) / items.length),
+        description: midday?.weather?.[0]?.description || '',
+        rain_probability: Math.max(...items.map((i) => Math.round((i.pop || 0) * 100))),
+        wind_speed: winds.length ? Math.max(...winds) : null,
+      };
+    });
 
   return normalise(
     {

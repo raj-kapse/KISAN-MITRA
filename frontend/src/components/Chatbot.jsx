@@ -113,8 +113,12 @@ function Chatbot({ diagnosis, lang }) {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to fetch chat');
-      const data = await response.json();
+      // Surface server-provided messages (rate limit wait, provider busy)
+      // instead of the generic "could not reach server"
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch chat');
+      }
 
       if (data.success) {
         setMessages([...newMessages, { role: 'model', content: data.reply }]);
