@@ -19,6 +19,12 @@ dotenv.config();
 // --- Route imports ---
 const healthRoutes = require('./routes/health');
 const diagnoseRoutes = require('./routes/diagnose');
+const { createRateLimiter } = require('./middleware/rateLimit');
+
+// Protect the free-tier AI/weather quota: generous enough for real farm
+// use, tight enough that one client can't drain it mid-demo.
+const aiRateLimit = createRateLimiter(20, 60_000); // 20 AI calls/min per IP
+const weatherRateLimit = createRateLimiter(60, 60_000); // 60 weather calls/min per IP
 
 // --- App setup ---
 const app = express();
@@ -48,13 +54,13 @@ const historyRoutes = require('./routes/history');
 const storesRoutes = require('./routes/stores');
 const chatRoutes = require('./routes/chat');
 
-app.use('/api', diagnoseRoutes);
-app.use('/api', weatherRoutes);
-app.use('/api', weatherAdvisoryRoutes);
+app.use('/api', aiRateLimit, diagnoseRoutes);
+app.use('/api', weatherRateLimit, weatherRoutes);
+app.use('/api', aiRateLimit, weatherAdvisoryRoutes);
 app.use('/api', geocodeRoutes);
 app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
-app.use('/api', chatRoutes);
+app.use('/api', aiRateLimit, chatRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

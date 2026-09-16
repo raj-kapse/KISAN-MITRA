@@ -8,11 +8,14 @@ const router = express.Router();
 router.get('/stores', async (req, res) => {
   try {
     const { lat, lon } = req.query;
-    if (!lat || !lon) {
-      return res.status(400).json({ success: false, error: 'Missing lat/lon' });
+    if (!isValidCoord(lat, -90, 90) || !isValidCoord(lon, -180, 180)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or missing lat/lon. Example: /api/stores?lat=19.87&lon=75.34',
+      });
     }
 
-    // Overpass QL query: search for agrochemical, farm shops, or marketplace within 10km (10000m)
+    // Overpass QL query: search for agrochemical, farm shops, or marketplace within 20km
     const overpassQuery = `
       [out:json][timeout:10];
       (
@@ -54,6 +57,12 @@ router.get('/stores', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to fetch stores' });
   }
 });
+
+// Numeric validation so untrusted query params can never reach the Overpass QL query
+function isValidCoord(value, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max;
+}
 
 // Haversine distance formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
