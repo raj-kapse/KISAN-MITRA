@@ -42,6 +42,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // --- Routes ---
 app.use('/api', healthRoutes);
 app.use('/api', diagnoseRoutes);
+const weatherRoutes = require('./routes/weather');
+app.use('/api', weatherRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {
