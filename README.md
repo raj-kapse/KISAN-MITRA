@@ -29,6 +29,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | 📜 Scan History | ✅ Working | Past diagnoses saved to Firestore, **scoped per device** (privacy) |
 | 💬 WhatsApp / PDF Export | ✅ Working | Share the report with an extension officer or print to PDF |
 | 📱 Offline-capable PWA | ✅ Working | Installable, service worker precache, works on low-end Android |
+| 🌈 Outdoor-Readable UI | ✅ Working | Sunlight-tested color token system (WCAG AA contrast), solid-fill buttons, ≥48px tap targets — designed for bright-field use on low-end phones |
 | 🛡️ Quota Protection | ✅ Working | Rate limiting on AI/weather endpoints, coordinate validation on all geo routes |
 
 ## Tech Stack
@@ -36,12 +37,35 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | Layer | Technology | Why |
 |-------|-----------|-----|
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
+| **Design System** | CSS custom properties — outdoor-first palette | WCAG AA contrast in bright sunlight, status colors kept distinct from brand green, terracotta accent reserved for primary CTAs |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
 | **AI Engine** | **Groq · Qwen 3.8-27b** (primary, multimodal) + **Google Gemini 3.x Flash** (failover chain) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
 | **Weather** | OpenWeatherMap (primary) + Open-Meteo (keyless fallback) | Live forecast data with automatic provider failover — the app never depends on a single free key |
 | **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
 | **Stores** | OpenStreetMap Overpass API | Free, no API key, farm-shop POIs |
+
+### Outdoor-First Design System
+
+The UI is built for farmers working in bright sunlight on low/mid-range Android phones. All colors are CSS custom properties defined once in `frontend/src/index.css` (`:root`) and consumed everywhere — no hardcoded hex values scattered in component styles.
+
+| Token | Value | Role |
+|-------|-------|------|
+| `--color-primary` | `#2E5F3E` | Forest green — brand, header, primary actions |
+| `--color-bg` | `#F5F3EE` | Off-white page background (less glare than pure white) |
+| `--color-text` | `#26241F` | Near-black content text |
+| `--color-status-healthy` / `-moderate` / `-severe` | `#4A8B5C` / `#C48A2B` / `#B4432F` | Severity & confidence indicators — always visually distinct from brand green |
+| `--color-accent-cta` | `#A85A3D` | Terracotta — voice input, Analyze CTA, and chat mic **only** |
+| `--color-border` | `#D8D3C7` | Cards, inputs, dividers |
+
+Rules baked into the system:
+
+1. **Status ≠ brand.** Severity/confidence colors never reuse the brand green, so "the app is green" can't be confused with "the crop is healthy."
+2. **One accent, three buttons.** The terracotta CTA color appears only on Read Aloud, Analyze Crop, and the chatbot mic — the actions a farmer needs most — so the eye lands there first.
+3. **WCAG AA everywhere.** Every text/background pairing passes 4.5:1 (e.g. the WhatsApp share button was darkened from `#25D366` at 1.9:1 to `#128C4B` at 4.6:1). Derived `-strong`/`-bg` token variants carry text and tint roles.
+4. **Sunlight-proof chrome.** Solid button fills instead of thin outlines, medium/semibold+ font weights on all primary content, and ≥48px tap targets with generous spacing.
+
+The PWA theme color (`frontend/index.html` + the manifest in `vite.config.js`) is kept in sync at `#2E5F3E`.
 
 ### Why a Multi-Provider AI Stack Instead of a Custom Model
 
@@ -147,8 +171,8 @@ kisan-mitra/
 │   │   │   ├── ScanHistory.jsx      # Per-device history view
 │   │   │   ├── Chatbot.jsx          # Floating assistant + voice input (mic → Whisper → spoken reply)
 │   │   │   └── VoiceButton.jsx      # TTS read-aloud
-│   │   ├── index.css            # Global styles
-│   │   └── App.css              # Component styles
+│   │   ├── index.css            # Global styles + color tokens (:root design system)
+│   │   └── App.css              # App shell styles
 │   ├── public/
 │   │   ├── manifest.json        # PWA manifest
 │   │   ├── favicon.svg, icon-192.png, icon-512.png
