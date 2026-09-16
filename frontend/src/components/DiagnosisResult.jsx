@@ -1,5 +1,5 @@
 /**
- * DiagnosisResult — Displays the AI diagnosis results
+ * DiagnosisResult — Displays the AI diagnosis results with bilingual toggle
  *
  * Shows:
  * - Disease name with confidence badge
@@ -7,50 +7,47 @@
  * - Description of what was detected
  * - Treatment recommendations (chemical, organic, preventive)
  * - Crop type identification
+ * - Language toggle (English / Hindi) — uses *_hi fields from API response
  *
  * Handles confidence-based styling (green for high, yellow for medium, red for low).
  */
 
 import './DiagnosisResult.css';
 
-/**
- * Returns a color class based on confidence level.
- */
 function getConfidenceClass(confidence) {
   if (confidence >= 0.8) return 'high';
   if (confidence >= 0.5) return 'medium';
   return 'low';
 }
 
-/**
- * Returns severity display info.
- */
-function getSeverityInfo(severity) {
+function getSeverityInfo(severity, lang) {
   const map = {
-    mild: { emoji: '🟢', label: 'Mild' },
-    moderate: { emoji: '🟡', label: 'Moderate' },
-    severe: { emoji: '🔴', label: 'Severe' },
+    mild:     { emoji: '🟢', label: lang === 'hi' ? 'हल्का' : 'Mild' },
+    moderate: { emoji: '🟡', label: lang === 'hi' ? 'मध्यम' : 'Moderate' },
+    severe:   { emoji: '🔴', label: lang === 'hi' ? 'गंभीर' : 'Severe' },
   };
   return map[severity] || { emoji: '⚪', label: severity || 'Unknown' };
 }
 
-function DiagnosisResult({ diagnosis }) {
+function DiagnosisResult({ diagnosis, lang = 'en' }) {
   if (!diagnosis) return null;
 
+  const isHi = lang === 'hi';
   const {
-    disease_name,
-    confidence,
-    severity,
-    description,
-    symptoms,
-    treatment,
-    crop_type,
+    disease_name, disease_name_hi,
+    confidence, severity,
+    description, description_hi,
+    symptoms, treatment, crop_type,
   } = diagnosis;
 
   const confClass = getConfidenceClass(confidence);
-  const sevInfo = getSeverityInfo(severity);
+  const sevInfo = getSeverityInfo(severity, lang);
   const confPercent = Math.round((confidence || 0) * 100);
   const isHealthy = disease_name?.toLowerCase() === 'healthy';
+
+  // Pick the right language field, falling back to English
+  const displayName = isHi ? (disease_name_hi || disease_name) : disease_name;
+  const displayDesc = isHi ? (description_hi || description) : description;
 
   return (
     <div className="diagnosis-result">
@@ -59,7 +56,7 @@ function DiagnosisResult({ diagnosis }) {
         <div className="diagnosis-title">
           <span className="diagnosis-emoji">{isHealthy ? '✅' : '🔬'}</span>
           <div>
-            <h3 className="disease-name">{disease_name || 'Unknown'}</h3>
+            <h3 className="disease-name">{displayName || 'Unknown'}</h3>
             {crop_type && (
               <span className="crop-badge">🌿 {crop_type}</span>
             )}
@@ -73,15 +70,17 @@ function DiagnosisResult({ diagnosis }) {
       {/* Low-confidence warning */}
       {confidence < 0.5 && (
         <div className="low-confidence-warning">
-          ⚠️ Low confidence — please consult a local agricultural expert for
-          accurate diagnosis.
+          {isHi
+            ? '⚠️ कम विश्वास — कृपया सटीक निदान के लिए स्थानीय कृषि विशेषज्ञ से परामर्श करें।'
+            : '⚠️ Low confidence — please consult a local agricultural expert for accurate diagnosis.'
+          }
         </div>
       )}
 
       {/* Severity */}
       {!isHealthy && severity && (
         <div className="info-row severity-row">
-          <span className="info-label">Severity</span>
+          <span className="info-label">{isHi ? 'गंभीरता' : 'Severity'}</span>
           <span className="severity-badge">
             {sevInfo.emoji} {sevInfo.label}
           </span>
@@ -89,17 +88,17 @@ function DiagnosisResult({ diagnosis }) {
       )}
 
       {/* Description */}
-      {description && (
+      {displayDesc && (
         <div className="diagnosis-section">
-          <h4>📋 Analysis</h4>
-          <p>{description}</p>
+          <h4>{isHi ? '📋 विश्लेषण' : '📋 Analysis'}</h4>
+          <p>{displayDesc}</p>
         </div>
       )}
 
       {/* Symptoms */}
       {symptoms && symptoms.length > 0 && (
         <div className="diagnosis-section">
-          <h4>🔍 Symptoms Detected</h4>
+          <h4>{isHi ? '🔍 लक्षण' : '🔍 Symptoms Detected'}</h4>
           <ul className="symptoms-list">
             {symptoms.map((s, i) => (
               <li key={i}>{s}</li>
@@ -111,26 +110,26 @@ function DiagnosisResult({ diagnosis }) {
       {/* Treatment recommendations */}
       {treatment && !isHealthy && (
         <div className="diagnosis-section treatment-section">
-          <h4>💊 Treatment</h4>
+          <h4>{isHi ? '💊 उपचार' : '💊 Treatment'}</h4>
 
-          {treatment.chemical && (
+          {(isHi ? treatment.chemical_hi : treatment.chemical) && (
             <div className="treatment-card chemical">
-              <span className="treatment-type">🧪 Chemical</span>
-              <p>{treatment.chemical}</p>
+              <span className="treatment-type">{isHi ? '🧪 रासायनिक' : '🧪 Chemical'}</span>
+              <p>{isHi ? (treatment.chemical_hi || treatment.chemical) : treatment.chemical}</p>
             </div>
           )}
 
-          {treatment.organic && (
+          {(isHi ? treatment.organic_hi : treatment.organic) && (
             <div className="treatment-card organic">
-              <span className="treatment-type">🌱 Organic</span>
-              <p>{treatment.organic}</p>
+              <span className="treatment-type">{isHi ? '🌱 जैविक' : '🌱 Organic'}</span>
+              <p>{isHi ? (treatment.organic_hi || treatment.organic) : treatment.organic}</p>
             </div>
           )}
 
-          {treatment.preventive && (
+          {(isHi ? treatment.preventive_hi : treatment.preventive) && (
             <div className="treatment-card preventive">
-              <span className="treatment-type">🛡️ Prevention</span>
-              <p>{treatment.preventive}</p>
+              <span className="treatment-type">{isHi ? '🛡️ रोकथाम' : '🛡️ Prevention'}</span>
+              <p>{isHi ? (treatment.preventive_hi || treatment.preventive) : treatment.preventive}</p>
             </div>
           )}
         </div>
@@ -139,8 +138,10 @@ function DiagnosisResult({ diagnosis }) {
       {/* Healthy plant message */}
       {isHealthy && (
         <div className="healthy-message">
-          🎉 Great news! Your crop looks healthy. Keep up the good farming
-          practices!
+          {isHi
+            ? '🎉 बढ़िया खबर! आपकी फसल स्वस्थ दिख रही है। अच्छी खेती की आदतें जारी रखें!'
+            : '🎉 Great news! Your crop looks healthy. Keep up the good farming practices!'
+          }
         </div>
       )}
     </div>

@@ -10,9 +10,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
  */
 export async function checkHealth() {
   const res = await fetch(`${API_BASE}/api/health`);
-  if (!res.ok) {
-    throw new Error(`Health check failed: ${res.status} ${res.statusText}`);
-  }
+  if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
   return res.json();
 }
 
@@ -28,7 +26,6 @@ export async function diagnoseCrop(imageFile) {
   const res = await fetch(`${API_BASE}/api/diagnose`, {
     method: 'POST',
     body: formData,
-    // Don't set Content-Type — browser sets it with boundary for multipart
   });
 
   if (!res.ok) {
@@ -41,15 +38,40 @@ export async function diagnoseCrop(imageFile) {
 
 /**
  * Fetches weather data for a given location.
- * @param {number} lat
- * @param {number} lon
- * @returns {Promise<Object>}
  */
 export async function getWeather(lat, lon) {
   const res = await fetch(`${API_BASE}/api/weather?lat=${lat}&lon=${lon}`);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Weather fetch failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Fetches scan history from Firestore.
+ */
+export async function getHistory(limit = 20) {
+  const res = await fetch(`${API_BASE}/api/history?limit=${limit}`);
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `History fetch failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Saves a diagnosis scan to Firestore.
+ */
+export async function saveScanHistory(diagnosis, location = null) {
+  const res = await fetch(`${API_BASE}/api/history`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ diagnosis, location }),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Save failed: ${res.status}`);
   }
   return res.json();
 }

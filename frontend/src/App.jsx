@@ -1,17 +1,20 @@
 /**
- * Kisan Mitra — Main App Component (Phase 2)
+ * Kisan Mitra — Main App Component
  *
- * Core flow:
+ * Complete flow:
  * 1. User captures/uploads a crop leaf photo
- * 2. Photo is sent to backend → Gemini AI for diagnosis
- * 3. Results displayed: disease, confidence, treatment, symptoms
- * 4. User can scan again for another diagnosis
+ * 2. Photo → backend → Gemini AI → structured diagnosis
+ * 3. Results: disease card, weather advisory, treatment — all bilingual
+ * 4. Voice read-aloud, scan history, language toggle
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
-import { diagnoseCrop } from './api';
+import WeatherAdvisory from './components/WeatherAdvisory';
+import VoiceButton from './components/VoiceButton';
+import ScanHistory from './components/ScanHistory';
+import { diagnoseCrop, saveScanHistory } from './api';
 import './App.css';
 
 function App() {
@@ -24,27 +27,24 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  /**
-   * Handle image selection from CameraCapture component.
-   * Stores the File object and creates a preview URL.
-   */
-  const handleImageSelected = (file) => {
+  // UI state
+  const [lang, setLang] = useState('en'); // 'en' or 'hi'
+  const [view, setView] = useState('scan'); // 'scan' or 'history'
+
+  /** Handle image selection from CameraCapture component. */
+  const handleImageSelected = useCallback((file) => {
     if (file) {
       setSelectedImage(file);
       setImagePreviewUrl(URL.createObjectURL(file));
-      // Clear previous results when a new image is selected
       setDiagnosis(null);
       setError(null);
     } else {
       setSelectedImage(null);
       setImagePreviewUrl(null);
     }
-  };
+  }, []);
 
-  /**
-   * Submit the selected image for AI diagnosis.
-   * Calls the backend /api/diagnose endpoint.
-   */
+  /** Submit image for AI diagnosis + auto-save to history */
   const handleDiagnose = async () => {
     if (!selectedImage) return;
 
@@ -56,6 +56,10 @@ function App() {
       const result = await diagnoseCrop(selectedImage);
       if (result.success && result.diagnosis) {
         setDiagnosis(result.diagnosis);
+        // Fire-and-forget save to history (don't block the UI)
+        saveScanHistory(result.diagnosis).catch(err =>
+          console.warn('History save skipped:', err.message)
+        );
       } else {
         throw new Error(result.error || 'Unexpected response from server');
       }
@@ -67,9 +71,7 @@ function App() {
     }
   };
 
-  /**
-   * Reset everything for a new scan.
-   */
+  /** Reset for a new scan */
   const handleScanAgain = () => {
     setSelectedImage(null);
     setImagePreviewUrl(null);
@@ -77,79 +79,121 @@ function App() {
     setError(null);
   };
 
+  /** Toggle language */
+  const toggleLang = () => setLang(l => l === 'en' ? 'hi' : 'en');
+
   return (
     <div className="app">
       {/* Header */}
       <header className="app-header">
-        <h1>🌾 Kisan Mitra</h1>
-        <p className="subtitle">AI Crop Health & Advisory</p>
+        <div className="header-top">
+          <h1>🌾 Kisan Mitra</h1>
+          <div className="header-controls">
+            <button className="lang-toggle" onClick={toggleLang} aria-label="Toggle language">
+              {lang === 'en' ? 'हिंदी' : 'ENG'}
+            </button>
+          </div>
+        </div>
+        <p className="subtitle">
+          {lang === 'hi' ? 'AI फसल स्वास्थ्य एवं सलाह' : 'AI Crop Health & Advisory'}
+        </p>
+        {/* Nav tabs */}
+        <nav className="header-nav">
+          <button
+            className={`nav-tab ${view === 'scan' ? 'active' : ''}`}
+            onClick={() => setView('scan')}
+          >
+            {lang === 'hi' ? '📸 स्कैन' : '📸 Scan'}
+          </button>
+          <button
+            className={`nav-tab ${view === 'history' ? 'active' : ''}`}
+            onClick={() => setView('history')}
+          >
+            {lang === 'hi' ? '📜 इतिहास' : '📜 History'}
+          </button>
+        </nav>
       </header>
 
       {/* Main content */}
       <main className="app-main">
 
-        {/* Step 1: Capture / Upload */}
-        {!diagnosis && (
-          <>
-            <CameraCapture
-              onImageSelected={handleImageSelected}
-              disabled={loading}
-            />
-
-            {/* Diagnose button — shown only when image is selected */}
-            {selectedImage && (
-              <button
-                className="diagnose-btn"
-                onClick={handleDiagnose}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="loading-content">
-                    <span className="spinner" />
-                    Analyzing...
-                  </span>
-                ) : (
-                  '🔬 Analyze Crop'
-                )}
-              </button>
-            )}
-          </>
+        {/* History view */}
+        {view === 'history' && (
+          <ScanHistory lang={lang} onBack={() => setView('scan')} />
         )}
 
-        {/* Error display */}
-        {error && (
-          <div className="error-msg">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {/* Step 2: Results */}
-        {diagnosis && (
+        {/* Scan view */}
+        {view === 'scan' && (
           <>
-            {/* Show the scanned image at the top of results */}
-            {imagePreviewUrl && (
-              <div className="scanned-image-container">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Scanned crop"
-                  className="scanned-image"
+            {/* Step 1: Capture / Upload */}
+            {!diagnosis && (
+              <>
+                <CameraCapture
+                  onImageSelected={handleImageSelected}
+                  disabled={loading}
                 />
+
+                {selectedImage && (
+                  <button
+                    className="diagnose-btn"
+                    onClick={handleDiagnose}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="loading-content">
+                        <span className="spinner" />
+                        {lang === 'hi' ? 'विश्लेषण हो रहा है...' : 'Analyzing...'}
+                      </span>
+                    ) : (
+                      lang === 'hi' ? '🔬 फसल का विश्लेषण करें' : '🔬 Analyze Crop'
+                    )}
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Error display */}
+            {error && (
+              <div className="error-msg">
+                <strong>Error:</strong> {error}
               </div>
             )}
 
-            <DiagnosisResult diagnosis={diagnosis} />
+            {/* Step 2: Results */}
+            {diagnosis && (
+              <>
+                {/* Scanned image */}
+                {imagePreviewUrl && (
+                  <div className="scanned-image-container">
+                    <img src={imagePreviewUrl} alt="Scanned crop" className="scanned-image" />
+                  </div>
+                )}
 
-            {/* Scan again button */}
-            <button className="scan-again-btn" onClick={handleScanAgain}>
-              📸 Scan Another Crop
-            </button>
+                {/* Voice read-aloud */}
+                <VoiceButton diagnosis={diagnosis} lang={lang} />
+
+                {/* Diagnosis card */}
+                <DiagnosisResult diagnosis={diagnosis} lang={lang} />
+
+                {/* Weather advisory */}
+                <WeatherAdvisory lang={lang} />
+
+                {/* Scan again */}
+                <button className="scan-again-btn" onClick={handleScanAgain}>
+                  {lang === 'hi' ? '📸 दूसरी फसल स्कैन करें' : '📸 Scan Another Crop'}
+                </button>
+              </>
+            )}
           </>
         )}
       </main>
 
       {/* Footer */}
       <footer className="app-footer">
-        Kisan Mitra · AI-powered crop advisory for Indian farmers
+        {lang === 'hi'
+          ? 'किसान मित्र · भारतीय किसानों के लिए AI फसल सलाह'
+          : 'Kisan Mitra · AI-powered crop advisory for Indian farmers'
+        }
       </footer>
     </div>
   );

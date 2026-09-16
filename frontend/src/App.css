@@ -12,7 +12,7 @@
 .app-header {
   background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
   color: white;
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-md) var(--space-md) 0;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: sticky;
@@ -20,16 +20,75 @@
   z-index: 100;
 }
 
+.header-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
 .app-header h1 {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  margin-bottom: var(--space-xs);
+  margin: 0;
+}
+
+.header-controls {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.lang-toggle {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lang-toggle:hover {
+  background: rgba(255,255,255,0.3);
 }
 
 .app-header .subtitle {
   font-size: var(--font-size-sm);
   opacity: 0.85;
   font-weight: 400;
+  margin: 2px 0 var(--space-sm);
+}
+
+/* Nav tabs */
+.header-nav {
+  display: flex;
+  gap: 0;
+}
+
+.nav-tab {
+  flex: 1;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-tab.active {
+  color: white;
+  border-bottom-color: white;
+}
+
+.nav-tab:hover {
+  color: white;
 }
 
 /* --- Main content --- */
@@ -88,6 +147,7 @@
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  display: inline-block;
 }
 
 @keyframes spin {
