@@ -105,6 +105,19 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
         );
         await new Promise((resolve) => setTimeout(resolve, backoffMs));
       } else {
+        // Friendly error for misconfigured keys — demo-critical, the raw
+        // googleapis JSON blob is useless to a farmer or judge.
+        const msg = apiError.message || '';
+        if (
+          apiError.status === 400 ||
+          apiError.status === 401 ||
+          apiError.status === 403 ||
+          /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)
+        ) {
+          throw new Error(
+            'Gemini API key is invalid or missing. Set a valid GEMINI_API_KEY in backend/.env'
+          );
+        }
         throw apiError;
       }
     }
