@@ -2,7 +2,7 @@
  * Gemini AI Service — Kisan Mitra
  * 
  * Multimodal crop disease detection service using Google Gen AI SDK (@google/genai)
- * and the Gemini 2.5 Flash model.
+ * and the Gemini 3.6 Flash model.
  */
 
 const { GoogleGenAI } = require('@google/genai');
@@ -76,7 +76,7 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: [{
           role: 'user',
           parts: [
@@ -170,7 +170,7 @@ Do not hallucinate. Be direct and actionable.`;
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: promptText
     });
 
@@ -203,7 +203,7 @@ async function chatWithGemini(messages, systemContext) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: contents
     });
 

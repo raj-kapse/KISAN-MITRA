@@ -35,7 +35,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 |-------|-----------|-----|
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
-| **AI Engine** | Google Gemini 2.5 Flash (multimodal) | No model hosting needed — one API call returns diagnosis + confidence + treatment + Hindi translation as structured JSON |
+| **AI Engine** | Google Gemini 3.6 Flash (multimodal) | No model hosting needed — one API call returns diagnosis + confidence + treatment + Hindi translation as structured JSON |
 | **Weather** | OpenWeatherMap | Free tier, 5-day forecast, geocoding for city fallback, metric units |
 | **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
@@ -45,7 +45,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 
 Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) on labeled datasets like PlantVillage, hosting the model, and maintaining a fixed set of disease classes. We chose a different approach:
 
-- **Gemini's multimodal API** accepts a raw leaf image and returns a diagnosis directly — no training pipeline, no model weights to manage, no GPU hosting
+- **Gemini's multimodal API** (3.6 Flash) accepts a raw leaf image and returns a diagnosis directly — no training pipeline, no model weights to manage, no GPU hosting
 - A single API call returns disease name, confidence, severity, symptoms, treatment options, yield risk, and crop identification — all as structured JSON
 - Hindi translations are generated in the same call, not through a separate translation layer
 - The model generalises to crops and diseases beyond any fixed training set
@@ -110,7 +110,7 @@ kisan-mitra/
 │   │   ├── stores.js            # GET  /api/stores?lat=&lon= (Overpass)
 │   │   └── chat.js              # POST /api/chat (context-aware assistant)
 │   ├── services/
-│   │   ├── gemini.js            # Gemini 2.5 Flash client: diagnosis, advisory, chat
+│   │   ├── gemini.js            # Gemini 3.6 Flash client: diagnosis, advisory, chat
 │   │   └── firebase.js          # Firestore init + per-device scan queries
 │   ├── .env.example
 │   └── package.json
@@ -188,7 +188,7 @@ Non-plant images return `disease_name: "Invalid Image"` instead of an error, and
 ## Hackathon Topic Coverage
 
 **AG-01 — Smart crop disease detection (image processing + ML):**
-client-side canvas preprocessing (resize/compress) → Gemini 2.5 Flash multimodal classification → structured severity/confidence/treatment output with bilingual delivery and export.
+client-side canvas preprocessing (resize/compress) → Gemini 3.6 Flash multimodal classification → structured severity/confidence/treatment output with bilingual delivery and export.
 
 **AG-02 — Localized weather forecasts + crop recommendations:**
 geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecast → prompt-chained Gemini advisory that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
