@@ -69,3 +69,4 @@ kisan-mitra/
 - [ ] **Phase 2** — Core features (photo capture, AI diagnosis, treatment, weather)
 - [ ] **Phase 3** — Advanced features (bilingual, voice, history)
 - [ ] **Phase 4** — Stretch goals (map, outbreaks, WhatsApp)
+# KISAN-MITRA
