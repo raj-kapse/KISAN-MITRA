@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { chatWithGemini } = require('../services/gemini');
+const { chatComplete } = require('../services/textProvider');
 
 /**
  * POST /api/chat
@@ -14,9 +14,12 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid messages format' });
     }
 
-    const reply = await chatWithGemini(messages, context || 'You are Kisan Mitra, an AI crop advisor.');
+    const { text: reply, provider } = await chatComplete(
+      messages,
+      context || 'You are Kisan Mitra, a helpful AI agricultural assistant for Indian farmers. Reply in the language the farmer uses (English or Hindi).'
+    );
     
-    res.json({ success: true, reply });
+    res.json({ success: true, reply, provider });
   } catch (error) {
     console.error('Chat Route Error:', error);
     res.status(500).json({ success: false, error: 'Failed to chat with AI' });

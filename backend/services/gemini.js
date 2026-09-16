@@ -65,71 +65,70 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   // Convert buffer to base64 string for Gemini inlineData
   const base64Image = imageBuffer.toString('base64');
 
-  console.log(`🤖 Initializing Gemini 2.5 Flash diagnosis (${mimeType}, base64 length: ${base64Image.length})...`);
+  console.log(`🤖 Initializing Gemini diagnosis (${mimeType}, base64 length: ${base64Image.length})...`);
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Retry logic for transient spikes (503 high demand / 429 rate limits)
-  const maxRetries = 3;
+  // Vision models in failover order. Each model has its OWN free-tier daily
+  // quota bucket, so exhausting one rolls over to the next — this multiplies
+  // total daily diagnoses (20/day on 3.6-flash alone was the old ceiling).
+  // All three are multimodal and understand the same diagnosis JSON prompt.
+  const visionModels = [
+    process.env.GEMINI_VISION_MODEL_1 || 'gemini-3.6-flash',
+    process.env.GEMINI_VISION_MODEL_2 || 'gemini-3.5-flash-lite',
+    process.env.GEMINI_VISION_MODEL_3 || 'gemini-3.5-flash',
+  ];
+
+  const maxRetries = 2; // per model; models themselves act as the bigger retry
   let response;
+  let lastApiError;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: [{
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType, data: base64Image } },
-            { text: CROP_DIAGNOSIS_PROMPT }
-          ]
-        }],
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
-      break; // Success, proceed with response
-    } catch (apiError) {
-      const isTransient =
-        apiError.status === 503 ||
-        apiError.status === 429 ||
-        (apiError.message &&
-          (apiError.message.includes('503') ||
-            apiError.message.includes('high demand') ||
-            apiError.message.includes('ResourceExhausted')));
-
-      if (isTransient && attempt < maxRetries) {
-        const backoffMs = attempt * 1500;
-        console.warn(
-          `⚠️ Gemini API temporary demand spike (attempt ${attempt}/${maxRetries}). Retrying in ${backoffMs}ms...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, backoffMs));
-      } else {
-        // Friendly error for misconfigured keys — demo-critical, the raw
-        // googleapis JSON blob is useless to a farmer or judge.
-        const msg = apiError.message || '';
-        if (
-          apiError.status === 400 ||
-          apiError.status === 401 ||
-          apiError.status === 403 ||
-          /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)
-        ) {
-          throw new Error(
-            'Gemini API key is invalid or missing. Set a valid GEMINI_API_KEY in backend/.env'
-          );
-        }
-        if (
+  outer: for (const model of visionModels) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: [{
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType, data: base64Image } },
+              { text: CROP_DIAGNOSIS_PROMPT }
+            ]
+          }],
+          config: {
+            responseMimeType: 'application/json'
+          }
+        });
+        console.log(`✅ Gemini diagnosis served by ${model}`);
+        break outer; // Success
+      } catch (apiError) {
+        lastApiError = apiError;
+        const isTransient =
           apiError.status === 503 ||
           apiError.status === 429 ||
-          /overload|high demand|ResourceExhausted|unavailable/i.test(msg)
-        ) {
-          throw new Error(
-            'Gemini is busy right now (high demand). Please try again in a few seconds.'
+          (apiError.message &&
+            (apiError.message.includes('503') ||
+              apiError.message.includes('high demand') ||
+              apiError.message.includes('ResourceExhausted')));
+
+        if (isTransient && attempt < maxRetries) {
+          const backoffMs = attempt * 1500;
+          console.warn(
+            `⚠️ Gemini [${model}] demand spike/quota (attempt ${attempt}/${maxRetries}). Retrying in ${backoffMs}ms...`
           );
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        } else if (isTransient) {
+          console.warn(`↪️ Falling over from ${model} to next model...`);
+          continue outer; // next model, no more retries on this one
+        } else {
+          throw friendlyGeminiError(apiError);
         }
-        throw apiError;
       }
     }
+  }
+
+  if (!response) {
+    throw lastApiError ? friendlyGeminiError(lastApiError) : new Error('Gemini diagnosis failed.');
   }
 
   const responseText = response?.text;
@@ -158,6 +157,34 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
     console.error('Failed to parse Gemini response as JSON. Raw response:', responseText);
     throw new Error(`Invalid JSON returned by Gemini: ${parseError.message}`);
   }
+}
+
+/**
+ * Map raw googleapis errors to farmer/judge-friendly messages.
+ * The raw JSON blobs are useless in a demo.
+ */
+function friendlyGeminiError(apiError) {
+  const msg = apiError.message || '';
+  if (
+    apiError.status === 400 ||
+    apiError.status === 401 ||
+    apiError.status === 403 ||
+    /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)
+  ) {
+    return new Error(
+      'Gemini API key is invalid or missing. Set a valid GEMINI_API_KEY in backend/.env'
+    );
+  }
+  if (
+    apiError.status === 503 ||
+    apiError.status === 429 ||
+    /overload|high demand|ResourceExhausted|unavailable/i.test(msg)
+  ) {
+    return new Error(
+      'All Gemini vision models are busy or out of daily quota right now. Please try again in a little while.'
+    );
+  }
+  return apiError;
 }
 
 /**
