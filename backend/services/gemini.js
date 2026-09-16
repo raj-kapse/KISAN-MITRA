@@ -118,6 +118,15 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
             'Gemini API key is invalid or missing. Set a valid GEMINI_API_KEY in backend/.env'
           );
         }
+        if (
+          apiError.status === 503 ||
+          apiError.status === 429 ||
+          /overload|high demand|ResourceExhausted|unavailable/i.test(msg)
+        ) {
+          throw new Error(
+            'Gemini is busy right now (high demand). Please try again in a few seconds.'
+          );
+        }
         throw apiError;
       }
     }

@@ -42,7 +42,7 @@ async function compressImage(file) {
   }
 }
 
-function CameraCapture({ onImageSelected, disabled, isLoading }) {
+function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
   const [mode, setMode] = useState('idle'); // 'idle', 'camera', 'preview'
   const [preview, setPreview] = useState(null);
   
@@ -229,15 +229,15 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
       {/* Fail-safe Samples for Demo */}
       {mode === 'idle' && !isLoading && (
         <div className="sample-images-section">
-          <p className="sample-title">Or try a sample:</p>
+          <p className="sample-title">{lang === 'hi' ? 'या नमूना आज़माएँ:' : 'Or try a sample:'}</p>
           <div className="sample-grid">
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample1.jpg', 'tomato_blight.jpg')} disabled={disabled}>
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample1.jpg', 'tomato_healthy.jpg')} disabled={disabled}>
               <img src="/samples/sample1.jpg" alt="Sample 1" />
             </button>
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample2.jpg', 'healthy_leaf.jpg')} disabled={disabled}>
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample2.jpg', 'tomato_early_blight.jpg')} disabled={disabled}>
               <img src="/samples/sample2.jpg" alt="Sample 2" />
             </button>
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample3.jpg', 'yellow_spots.jpg')} disabled={disabled}>
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample3.jpg', 'garden_healthy.jpg')} disabled={disabled}>
               <img src="/samples/sample3.jpg" alt="Sample 3" />
             </button>
           </div>
