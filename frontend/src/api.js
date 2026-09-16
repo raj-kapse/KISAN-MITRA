@@ -77,6 +77,18 @@ export async function saveScanHistory(diagnosis, location = null) {
 }
 
 /**
+ * Resolves a city name to coordinates (manual fallback when geolocation is denied).
+ */
+export async function geocodeCity(query) {
+  const res = await fetch(`${API_BASE}/api/geocode?q=${encodeURIComponent(query)}`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.success) {
+    throw new Error(body.error || `Location search failed: ${res.status}`);
+  }
+  return body.location;
+}
+
+/**
  * Fetches nearby agricultural stores.
  */
 export async function getStores(lat, lon) {
