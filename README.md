@@ -1,22 +1,25 @@
 # 🌾 Kisan Mitra — AI Crop Health & Advisory App
 
+### Contributers: SIyal, Raj, Naveen
+
 An AI-powered mobile-first web app that helps Indian farmers diagnose crop
 diseases from leaf photos and get weather-based agricultural advisory.
 
 ## Tech Stack
 
-| Layer     | Technology                       |
-| --------- | -------------------------------- |
-| Frontend  | React + Vite (PWA)               |
-| Backend   | Node.js + Express                |
-| AI Engine | Google Gemini (multimodal)       |
-| Weather   | OpenWeatherMap API               |
-| Database  | Firebase / Firestore             |
-| Voice     | Web Speech API (browser TTS)     |
+| Layer     | Technology                   |
+| --------- | ---------------------------- |
+| Frontend  | React + Vite (PWA)           |
+| Backend   | Node.js + Express            |
+| AI Engine | Google Gemini (multimodal)   |
+| Weather   | OpenWeatherMap API           |
+| Database  | Firebase / Firestore         |
+| Voice     | Web Speech API (browser TTS) |
 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - API keys for: Gemini, OpenWeatherMap, Firebase
 
@@ -65,8 +68,9 @@ kisan-mitra/
 
 ## Build Phases
 
-- [x] **Phase 1** — Skeleton & keys (frontend ↔ backend round-trip)
+- [X] **Phase 1** — Skeleton & keys (frontend ↔ backend round-trip)
 - [ ] **Phase 2** — Core features (photo capture, AI diagnosis, treatment, weather)
 - [ ] **Phase 3** — Advanced features (bilingual, voice, history)
 - [ ] **Phase 4** — Stretch goals (map, outbreaks, WhatsApp)
+
 # KISAN-MITRA
