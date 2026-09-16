@@ -17,7 +17,9 @@ const router = express.Router();
 router.get('/history', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
-    const scans = await getRecentScans(limit);
+    // Scope to the calling device; fall back to unfiltered for old clients
+    const deviceId = (req.query.deviceId || '').toString().trim().slice(0, 128) || null;
+    const scans = await getRecentScans(limit, deviceId);
     return res.json({ success: true, scans });
   } catch (err) {
     console.error('❌ History fetch error:', err.message);
@@ -35,7 +37,7 @@ router.get('/history', async (req, res) => {
  */
 router.post('/history', async (req, res) => {
   try {
-    const { diagnosis, location } = req.body;
+    const { diagnosis, location, deviceId } = req.body;
 
     if (!diagnosis) {
       return res.status(400).json({
@@ -47,6 +49,7 @@ router.post('/history', async (req, res) => {
     const scanData = {
       diagnosis,
       location: location || null,
+      deviceId: typeof deviceId === 'string' ? deviceId.trim().slice(0, 128) : null,
       timestamp: new Date().toISOString(),
     };
 

@@ -75,15 +75,20 @@ async function saveScan(scan) {
 /**
  * Retrieve recent scans from Firestore.
  * @param {number} limit — max number of scans to return
+ * @param {string|null} deviceId — when set, only scans saved by this device are returned
  * @returns {Array} — array of scan objects
  */
-async function getRecentScans(limit = 20) {
+async function getRecentScans(limit = 20, deviceId = null) {
   const firestore = getDb();
   if (!firestore) return [];
 
   try {
-    const snapshot = await firestore
-      .collection('scans')
+    let query = firestore.collection('scans');
+    if (deviceId) {
+      // Requires the automatic single-field index on deviceId + manual ordering
+      query = query.where('deviceId', '==', deviceId);
+    }
+    const snapshot = await query
       .orderBy('createdAt', 'desc')
       .limit(limit)
       .get();
