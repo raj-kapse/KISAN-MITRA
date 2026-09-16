@@ -240,11 +240,11 @@ geolocation (with city-name fallback) → OpenWeatherMap/Open-Meteo current + 5-
 
 ## Contributors
 
-|| Name | Role | GitHub ||
+| Name | Role | GitHub |
 |------|------|--------|
 | **Raj Kapse** | Backend & API Development | [@raj-kapse](https://github.com/raj-kapse) |
-| **Siyal Kambale** | Full-Stack Lead | [@Siyalkamble](https://github.com/Siyalkamble) |
-| **Naveen Thakur** | Frontend & PWA | [@nav548777](https://github.com/nav548777) |
+| **Siyal Kambale** | Frontend & PWA | [@Siyalkamble](https://github.com/Siyalkamble) |
+| **Naveen Thakur** | Full-Stack Lead | [@nav548777](https://github.com/nav548777) |
 
 ## License
 
