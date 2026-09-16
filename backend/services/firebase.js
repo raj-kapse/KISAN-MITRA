@@ -5,10 +5,27 @@
  * Gracefully degrades if Firebase is not configured (returns null).
  */
 
-const admin = require('firebase-admin');
+const adminRaw = require('firebase-admin');
+// Handle both CJS and ESM-style package shapes — some installs expose the
+// SDK under `.default`, and calling `.credential` on the wrong shape is a
+// silent crash ("Cannot read properties of undefined (reading
+// 'applicationDefault')") that disabled scan history.
+const admin = adminRaw.default ?? adminRaw;
 
 let db = null;
 let isInitialized = false;
+
+/**
+ * True only when Firestore is usable: a REAL (non-placeholder) project id
+ * is set AND the SDK initialised. The default .env ships
+ * "your_firebase_project_id" — treating that as configured caused every
+ * scan save to silently no-op.
+ */
+function isFirebaseConfigured() {
+  const projectId = process.env.FIREBASE_PROJECT_ID || '';
+  if (!projectId || /^your[_-]?/i.test(projectId)) return false;
+  return getDb() !== null;
+}
 
 /**
  * Initialise Firebase Admin SDK.
@@ -100,8 +117,10 @@ async function getRecentScans(limit = 20, deviceId = null) {
       createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || null,
     }));
   } catch (err) {
+    // Return null (not []) so callers can distinguish "read failed, try
+    // another store" from "genuinely empty history".
     console.error('❌ Failed to fetch scans:', err.message);
-    return [];
+    return null;
   }
 }
 

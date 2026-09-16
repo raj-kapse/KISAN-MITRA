@@ -6,7 +6,7 @@
  */
 
 const express = require('express');
-const { saveScan, getRecentScans } = require('../services/firebase');
+const { saveScan, getRecentScans } = require('../services/scanStore');
 
 const router = express.Router();
 
@@ -58,11 +58,12 @@ router.post('/history', async (req, res) => {
     if (docId) {
       return res.json({ success: true, id: docId });
     } else {
-      // Firebase not configured — still return success (graceful degradation)
+      // Persistence unavailable on every tier (Firestore unconfigured AND
+      // local write failed) — still non-fatal for the scan flow.
       return res.json({
         success: true,
         id: null,
-        note: 'Firebase not configured — scan not persisted.',
+        note: 'Scan could not be persisted (no storage available).',
       });
     }
   } catch (err) {

@@ -23,3 +23,6 @@ Thumbs.db
 npm-debug.log*
 test-images/
 .env
+
+# Local scan-history fallback store (per-machine data)
+backend/data/

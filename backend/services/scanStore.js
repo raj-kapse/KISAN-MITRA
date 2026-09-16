@@ -1,0 +1,107 @@
+/**
+ * Scan Store — Kisan Mitra
+ *
+ * Persists scan diagnoses with a two-tier strategy:
+ *   1. Firestore (via services/firebase.js) when real credentials are configured
+ *   2. Local JSON file (backend/data/scans.json) otherwise — so scan history
+ *      works with zero Firebase setup (hackathon / local demo mode)
+ *
+ * The fallback file keeps a bounded number of most-recent scans (per device)
+ * and is written atomically. The route/response contract is unchanged.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { isFirebaseConfigured, saveScan: saveToFirestore, getRecentScans: getFromFirestore } = require('./firebase');
+
+const DATA_DIR = path.join(__dirname, '..', 'data');
+const SCANS_FILE = path.join(DATA_DIR, 'scans.json');
+
+// Bounded store: keep the N most recent scans overall (the file is a demo-tier
+// store, not a database). 500 scans ≈ tens of KB.
+const MAX_SCANS = 500;
+
+function isFirebaseReady() {
+  try {
+    return isFirebaseConfigured();
+  } catch {
+    return false;
+  }
+}
+
+function readScans() {
+  try {
+    const raw = fs.readFileSync(SCANS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed.scans) ? parsed.scans : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeScans(scans) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  // Atomic-ish write: temp file then rename, so a crash mid-write can't
+  // corrupt the store.
+  const tmp = `${SCANS_FILE}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ scans }, null, 2));
+  fs.renameSync(tmp, SCANS_FILE);
+}
+
+/**
+ * Persist a scan. Returns a document id (Firestore) or a local id
+ * (`local-...`) — null only if every tier failed.
+ * @param {Object} scan — { diagnosis, timestamp, location?, deviceId? }
+ */
+async function saveScan(scan) {
+  // Tier 1: Firestore, when actually usable
+  if (isFirebaseReady()) {
+    const docId = await saveToFirestore(scan);
+    if (docId) return docId;
+    // Firestore configured but the write failed — fall through to local
+    console.warn('⚠️ Firestore write failed — falling back to local scan store');
+  }
+
+  // Tier 2: local file
+  try {
+    const scans = readScans();
+    const entry = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      ...scan,
+      createdAt: scan.timestamp || new Date().toISOString(),
+    };
+    scans.unshift(entry);
+    // Trim to MAX_SCANS, keeping the newest (unshifted) entries; drop entries
+    // with no deviceId last so shared scans aren't lost first
+    const withDevice = scans.filter(s => s.deviceId);
+    const withoutDevice = scans.filter(s => !s.deviceId);
+    const kept = [...withDevice.slice(0, MAX_SCANS), ...withoutDevice.slice(0, Math.floor(MAX_SCANS / 10))];
+    writeScans(kept);
+    return entry.id;
+  } catch (err) {
+    console.error('❌ Local scan store write failed:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Retrieve recent scans, newest first. When deviceId is set, only that
+ * device's scans are returned (same semantics as the Firestore path).
+ */
+async function getRecentScans(limit = 20, deviceId = null) {
+  if (isFirebaseReady()) {
+    const scans = await getFromFirestore(limit, deviceId);
+    if (scans !== null) return scans;
+    console.warn('⚠️ Firestore read failed — falling back to local scan store');
+  }
+
+  let scans = readScans();
+  if (deviceId) {
+    scans = scans.filter(s => s.deviceId === deviceId);
+  }
+  return scans
+    .slice(0, limit)
+    .map(s => ({ ...s, createdAt: s.createdAt || s.timestamp || null }));
+}
+
+module.exports = { saveScan, getRecentScans };
