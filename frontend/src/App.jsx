@@ -131,6 +131,7 @@ function App() {
                 <CameraCapture
                   onImageSelected={handleImageSelected}
                   disabled={loading}
+                  isLoading={loading}
                 />
 
                 {selectedImage && (
@@ -141,7 +142,6 @@ function App() {
                   >
                     {loading ? (
                       <span className="loading-content">
-                        <span className="spinner" />
                         {lang === 'hi' ? 'विश्लेषण हो रहा है...' : 'Analyzing...'}
                       </span>
                     ) : (

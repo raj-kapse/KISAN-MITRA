@@ -1,112 +1,188 @@
-/* ==========================================
- * CameraCapture — Styles
- * ========================================== */
-
-.camera-capture {
+.camera-capture-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
 
-/* --- Preview --- */
-.preview-container {
+/* Viewfinder Motif */
+.viewfinder-frame {
   position: relative;
-  border-radius: var(--radius-lg);
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-color: #000; /* Dark background for camera feel */
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-color: rgba(255, 255, 255, 0.8);
+  border-style: solid;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.viewfinder-frame.is-scanning .corner {
+  border-color: var(--color-primary-light);
+  transform: scale(1.05);
+}
+
+.top-left {
+  top: 16px;
+  left: 16px;
+  border-width: 4px 0 0 4px;
+}
+.top-right {
+  top: 16px;
+  right: 16px;
+  border-width: 4px 4px 0 0;
+}
+.bottom-left {
+  bottom: 16px;
+  left: 16px;
+  border-width: 0 0 4px 4px;
+}
+.bottom-right {
+  bottom: 16px;
+  right: 16px;
+  border-width: 0 4px 4px 0;
+}
+
+/* Scan line animation */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--color-primary-light);
+  box-shadow: 0 0 10px 2px var(--color-primary-light);
+  opacity: 0.7;
+  z-index: 15;
+  animation: scan-sweep 2s ease-in-out infinite;
+}
+
+@keyframes scan-sweep {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Internal elements */
+.capture-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.placeholder-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror effect if it's front-facing, but usually we request environment */
+}
+
+/* If environment facing, don't mirror */
+@media (pointer: coarse) {
+  .camera-video {
+    transform: none;
+  }
 }
 
 .preview-image {
   width: 100%;
-  max-height: 300px;
+  height: 100%;
   object-fit: cover;
-  display: block;
 }
 
-.clear-btn {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.clear-btn:hover {
-  background: rgba(0, 0, 0, 0.8);
-}
-
-/* --- Placeholder --- */
-.capture-placeholder {
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl) var(--space-lg);
-  text-align: center;
-  background: var(--color-surface);
-}
-
-.placeholder-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: var(--space-sm);
-}
-
-.capture-placeholder p {
-  color: var(--color-text-light);
-  font-size: var(--font-size-sm);
-  max-width: 250px;
-  margin: 0 auto;
-}
-
-/* --- Action buttons --- */
+/* Actions */
 .capture-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-md);
-  margin-top: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
 }
 
 .capture-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
   font-size: var(--font-size-base);
   font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: all 0.2s;
   text-align: center;
-  transition: transform 0.1s, box-shadow 0.2s;
-  border: 2px solid transparent;
+  color: var(--color-text);
+  background: transparent;
 }
 
-.capture-btn:active {
-  transform: scale(0.97);
-}
-
-.capture-btn.camera {
+.capture-btn.primary {
   background: var(--color-primary);
   color: white;
 }
-
-.capture-btn.camera:hover {
-  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+.capture-btn.primary:active {
+  transform: scale(0.97);
 }
 
 .capture-btn.upload {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+}
+.capture-btn.upload:active {
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.capture-btn.upload:hover {
-  background: #f0fdf4;
+.capture-btn.secondary {
+  color: var(--color-text-light);
+  text-decoration: underline;
+}
+
+.capture-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Shutter Button */
+.capture-btn.shutter {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  border: 4px solid var(--color-border);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.shutter-inner {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.1s;
+}
+
+.capture-btn.shutter:active .shutter-inner {
+  transform: scale(0.9);
+  background: var(--color-border);
 }

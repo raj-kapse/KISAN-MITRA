@@ -1,112 +1,166 @@
-/**
- * CameraCapture — Photo capture/upload component
- *
- * Provides two methods of image input:
- * 1. Camera capture (uses device camera via file input accept="image/*" capture)
- * 2. File upload (select from gallery/filesystem)
- *
- * Shows a live preview of the selected image before submission.
- */
-
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './CameraCapture.css';
 
-function CameraCapture({ onImageSelected, disabled }) {
+function CameraCapture({ onImageSelected, disabled, isLoading }) {
+  const [mode, setMode] = useState('idle'); // 'idle', 'camera', 'preview'
   const [preview, setPreview] = useState(null);
+  
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
 
-  /**
-   * Handle file selection from either camera or file picker.
-   * Creates an object URL for preview and passes the file up.
-   */
-  const handleFileChange = (e) => {
+  // Stop camera stream safely
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // Wait for video to load metadata to ensure dimensions are ready
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+        };
+      }
+      setMode('camera');
+      onImageSelected(null);
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      alert('Camera access denied or not available. Please use the upload option.');
+      setMode('idle');
+    }
+  };
+
+  const takePhoto = () => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+        const url = URL.createObjectURL(file);
+        setPreview(url);
+        setMode('preview');
+        onImageSelected(file);
+        stopCamera();
+      }
+    }, 'image/jpeg', 0.9);
+  };
+
+  const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate it's an image
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (JPEG, PNG, or WebP)');
+      alert('Please select an image file');
       return;
     }
 
-    // Validate size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image too large. Maximum size is 10MB.');
-      return;
-    }
-
-    // Create preview URL
     const url = URL.createObjectURL(file);
     setPreview(url);
+    setMode('preview');
     onImageSelected(file);
+    stopCamera();
   };
 
-  /**
-   * Clear the current selection and reset inputs.
-   */
   const clearSelection = () => {
     setPreview(null);
+    setMode('idle');
     onImageSelected(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    stopCamera();
   };
 
   return (
-    <div className="camera-capture">
-      {/* Preview area */}
-      {preview ? (
-        <div className="preview-container">
-          <img src={preview} alt="Selected crop leaf" className="preview-image" />
-          <button
-            className="clear-btn"
-            onClick={clearSelection}
-            disabled={disabled}
-            aria-label="Remove selected image"
-          >
-            ✕
+    <div className="camera-capture-container">
+      {/* Viewfinder Frame */}
+      <div className={`viewfinder-frame ${isLoading ? 'is-scanning' : ''}`}>
+        {/* Motif corners */}
+        <div className="corner top-left"></div>
+        <div className="corner top-right"></div>
+        <div className="corner bottom-left"></div>
+        <div className="corner bottom-right"></div>
+
+        {/* Scan line animation */}
+        {isLoading && <div className="scan-line"></div>}
+
+        {mode === 'idle' && (
+          <div className="capture-placeholder">
+            <span className="placeholder-icon">📸</span>
+            <p>Ready to scan crop leaf</p>
+          </div>
+        )}
+
+        {mode === 'camera' && (
+          <video
+            ref={videoRef}
+            className="camera-video"
+            playsInline
+            autoPlay
+            muted
+          />
+        )}
+
+        {mode === 'preview' && preview && (
+          <img src={preview} alt="Crop preview" className="preview-image" />
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="capture-actions">
+        {mode === 'camera' ? (
+          <>
+            <button className="capture-btn shutter" onClick={takePhoto} disabled={disabled}>
+              <div className="shutter-inner"></div>
+            </button>
+            <button className="capture-btn secondary" onClick={clearSelection} disabled={disabled}>
+              Cancel
+            </button>
+          </>
+        ) : mode === 'preview' ? (
+          <button className="capture-btn secondary" onClick={clearSelection} disabled={disabled}>
+            ✕ Clear
           </button>
-        </div>
-      ) : (
-        <div className="capture-placeholder">
-          <span className="placeholder-icon">📸</span>
-          <p>Take a photo or upload an image of the affected crop leaf</p>
-        </div>
-      )}
-
-      {/* Action buttons */}
-      {!preview && (
-        <div className="capture-actions">
-          {/* Camera capture — opens native camera on mobile */}
-          <label className="capture-btn camera" htmlFor="camera-input">
-            📷 Take Photo
-          </label>
-          <input
-            ref={cameraInputRef}
-            id="camera-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileChange}
-            className="sr-only"
-            disabled={disabled}
-          />
-
-          {/* File upload — opens file picker */}
-          <label className="capture-btn upload" htmlFor="file-input">
-            🖼️ Upload Image
-          </label>
-          <input
-            ref={fileInputRef}
-            id="file-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileChange}
-            className="sr-only"
-            disabled={disabled}
-          />
-        </div>
-      )}
+        ) : (
+          <>
+            <button className="capture-btn primary" onClick={startCamera} disabled={disabled}>
+              📷 Open Camera
+            </button>
+            <label className="capture-btn upload" htmlFor="file-upload">
+              🖼️ Upload
+            </label>
+            <input
+              ref={fileInputRef}
+              id="file-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="sr-only"
+              disabled={disabled}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }

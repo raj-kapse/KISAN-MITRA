@@ -12,6 +12,7 @@
  * Handles confidence-based styling (green for high, yellow for medium, red for low).
  */
 
+import AgriStoreLocator from './AgriStoreLocator';
 import './DiagnosisResult.css';
 
 function getConfidenceClass(confidence) {
@@ -54,13 +55,8 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
       {/* Header — disease name + confidence */}
       <div className={`diagnosis-header ${isHealthy ? 'healthy' : 'diseased'}`}>
         <div className="diagnosis-title">
-          <span className="diagnosis-emoji">{isHealthy ? '✅' : '🔬'}</span>
-          <div>
-            <h3 className="disease-name">{displayName || 'Unknown'}</h3>
-            {crop_type && (
-              <span className="crop-badge">🌿 {crop_type}</span>
-            )}
-          </div>
+          <span className="crop-badge">{isHealthy ? '✅' : '🔬'} {crop_type || 'Crop'}</span>
+          <h3 className="disease-name">{displayName || 'Unknown'}</h3>
         </div>
         <div className={`confidence-badge ${confClass}`}>
           {confPercent}%
@@ -132,6 +128,8 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
               <p>{isHi ? (treatment.preventive_hi || treatment.preventive) : treatment.preventive}</p>
             </div>
           )}
+
+          <AgriStoreLocator lang={lang} />
         </div>
       )}
 

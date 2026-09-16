@@ -19,12 +19,14 @@
   --color-border: #e0e0e0;
 
   /* Typography */
-  --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-family: 'Hind', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
+  --font-size-xl: 1.75rem;
+  --font-size-2xl: 2.25rem;
+  --font-size-3xl: 2.75rem;
 
   /* Spacing */
   --space-xs: 0.25rem;

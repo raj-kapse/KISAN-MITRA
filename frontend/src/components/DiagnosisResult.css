@@ -4,42 +4,52 @@
 
 .diagnosis-result {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
   margin-bottom: var(--space-lg);
+  position: relative;
+}
+
+/* Add a scanner-like corner tick to reinforce the "scan result" idea */
+.diagnosis-result::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 30px; height: 30px;
+  border-bottom: 2px solid var(--color-border);
+  border-left: 2px solid var(--color-border);
+  background: #f8fafc;
+  border-bottom-left-radius: 8px;
 }
 
 /* --- Header --- */
 .diagnosis-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: var(--space-lg);
-  gap: var(--space-md);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .diagnosis-header.healthy {
-  background: linear-gradient(135deg, #d8f3dc, #b7e4c7);
+  background: #f0fdf4;
 }
 
 .diagnosis-header.diseased {
-  background: linear-gradient(135deg, #fff3cd, #ffe0b2);
+  background: #fffbeb;
 }
 
 .diagnosis-title {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.diagnosis-emoji {
-  font-size: 2rem;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .disease-name {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
+  line-height: 1.1;
   color: var(--color-text);
   margin: 0;
 }
@@ -47,16 +57,18 @@
 .crop-badge {
   font-size: var(--font-size-sm);
   color: var(--color-text-light);
-  margin-top: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* --- Confidence badge --- */
 .confidence-badge {
   font-size: var(--font-size-lg);
   font-weight: 700;
-  padding: var(--space-xs) var(--space-md);
-  border-radius: 999px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 2px solid currentColor;
   white-space: nowrap;
   flex-shrink: 0;
 }

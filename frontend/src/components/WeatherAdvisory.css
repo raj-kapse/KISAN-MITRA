@@ -2,9 +2,9 @@
 
 .weather-card {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: var(--space-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: var(--space-lg);
 }
 

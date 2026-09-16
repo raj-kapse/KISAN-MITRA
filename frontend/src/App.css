@@ -156,10 +156,10 @@
 
 /* --- Scanned image in results --- */
 .scanned-image-container {
-  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: var(--space-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .scanned-image {

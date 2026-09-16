@@ -75,3 +75,15 @@ export async function saveScanHistory(diagnosis, location = null) {
   }
   return res.json();
 }
+
+/**
+ * Fetches nearby agricultural stores.
+ */
+export async function getStores(lat, lon) {
+  const res = await fetch(`${API_BASE}/api/stores?lat=${lat}&lon=${lon}`);
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Stores fetch failed: ${res.status}`);
+  }
+  return res.json();
+}
