@@ -53,6 +53,7 @@ const geocodeRoutes = require('./routes/geocode');
 const historyRoutes = require('./routes/history');
 const storesRoutes = require('./routes/stores');
 const chatRoutes = require('./routes/chat');
+const transcribeRoutes = require('./routes/transcribe');
 
 app.use('/api', aiRateLimit, diagnoseRoutes);
 app.use('/api', weatherRateLimit, weatherRoutes);
@@ -61,6 +62,7 @@ app.use('/api', geocodeRoutes);
 app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
 app.use('/api', aiRateLimit, chatRoutes);
+app.use('/api', aiRateLimit, transcribeRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

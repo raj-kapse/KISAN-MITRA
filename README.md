@@ -22,6 +22,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | 🏙️ Manual Location Fallback | ✅ Working | City-name search when geolocation is denied — the feature never dead-ends |
 | 🗣️ Bilingual Output | ✅ Working | English + Hindi toggle for all diagnosis and treatment text |
 | 🔊 Voice Read-Aloud | ✅ Working | Web Speech API TTS in Hindi or English |
+| 🎙️ Hindi Voice Input | ✅ Working | Hold the mic, speak in Hindi/English → Groq Whisper transcribes → the answer is **spoken aloud** — a fully hands-free loop for farmers who can't type |
 | 🤖 Context-aware Chatbot | ✅ Working | Floating assistant that knows your latest scan and answers follow-ups |
 | 🏪 Nearby Agri-stores | ✅ Working | OpenStreetMap lookup of agrochemical/farm shops within 20 km |
 | 📜 Scan History | ✅ Working | Past diagnoses saved to Firestore, **scoped per device** (privacy) |
@@ -121,7 +122,8 @@ kisan-mitra/
 │   │   ├── geocode.js           # GET  /api/geocode?q=<city> (manual location fallback)
 │   │   ├── history.js           # GET/POST /api/history (device-scoped)
 │   │   ├── stores.js            # GET  /api/stores?lat=&lon= (Overpass)
-│   │   └── chat.js              # POST /api/chat (context-aware assistant)
+│   │   ├── chat.js              # POST /api/chat (context-aware assistant)
+│   │   └── transcribe.js        # POST /api/transcribe (voice → Groq Whisper, Hindi)
 │   ├── services/
 │   │   ├── gemini.js            # Vision provider chain: Groq Qwen primary → Gemini failover
 │   │   ├── textProvider.js      # Text provider chain: Groq primary → Gemini fallback
@@ -139,7 +141,7 @@ kisan-mitra/
 │   │   │   ├── WeatherAdvisory.jsx  # Weather + AI advice + city fallback
 │   │   │   ├── AgriStoreLocator.jsx # Nearby agri-stores
 │   │   │   ├── ScanHistory.jsx      # Per-device history view
-│   │   │   ├── Chatbot.jsx          # Floating context-aware assistant
+│   │   │   ├── Chatbot.jsx          # Floating assistant + voice input (mic → Whisper → spoken reply)
 │   │   │   └── VoiceButton.jsx      # TTS read-aloud
 │   │   ├── index.css            # Global styles
 │   │   └── App.css              # Component styles
@@ -168,6 +170,7 @@ kisan-mitra/
 | `/api/history` | POST | Save a diagnosis (`deviceId` in body) |
 | `/api/stores?lat=&lon=` | GET | Nearby agricultural stores within 20 km |
 | `/api/chat` | POST | Context-aware chatbot reply *(rate-limited)* |
+| `/api/transcribe` | POST | Voice note (multipart, field: `audio`) → Hindi/English transcript via Groq Whisper *(rate-limited)* |
 
 ### Diagnosis Response Shape
 
