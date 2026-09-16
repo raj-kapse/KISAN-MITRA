@@ -199,7 +199,7 @@ geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecas
 |------|------|--------|
 | **Raj Kapse** | Backend & API Development | [@raj-kapse](https://github.com/raj-kapse) |
 | **Siyal Kambale** | Full-Stack Lead | [@Siyalkamble](https://github.com/Siyalkamble) |
-| **Naveen Thakur** | Frontend & PWA | [@nav54877](https://github.com/nav54877) |
+| **Naveen Thakur** | Frontend & PWA | [@nav548777](https://github.com/nav548777) |
 
 ## License
 
