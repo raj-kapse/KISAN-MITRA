@@ -19,6 +19,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | 💊 Treatment Recommendations | ✅ Working | Chemical, organic, and preventive options with dosages |
 | ⚠️ Yield Risk Estimate | ✅ Working | Economic loss if the disease goes untreated |
 | 🌦️ Weather Advisory | ✅ Working | Current conditions + 5-day forecast, with AI-combined disease + weather guidance |
+| 🔄 Weather Provider Failover | ✅ Working | OpenWeatherMap primary → Open-Meteo keyless backup — weather never dies with a key or quota |
 | 🏙️ Manual Location Fallback | ✅ Working | City-name search when geolocation is denied — the feature never dead-ends |
 | 🗣️ Bilingual Output | ✅ Working | English + Hindi toggle for all diagnosis and treatment text |
 | 🔊 Voice Read-Aloud | ✅ Working | Web Speech API TTS in Hindi or English |
@@ -37,7 +38,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
 | **AI Engine** | **Groq · Qwen 3.8-27b** (primary, multimodal) + **Google Gemini 3.x Flash** (failover chain) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
-| **Weather** | OpenWeatherMap | Free tier, 5-day forecast, geocoding for city fallback, metric units |
+| **Weather** | OpenWeatherMap (primary) + Open-Meteo (keyless fallback) | Live forecast data with automatic provider failover — the app never depends on a single free key |
 | **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
 | **Stores** | OpenStreetMap Overpass API | Free, no API key, farm-shop POIs |
@@ -60,6 +61,8 @@ Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) 
 📷 Diagnosis   →  Groq/Qwen 3.8-27b → gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash
 💬 Chatbot     →  Groq/Qwen 3.8-27b → Gemini
 🌦️ Advisory    →  Groq/Qwen 3.8-27b → Gemini
+🌤️ Weather data →  OpenWeatherMap → Open-Meteo (keyless, never out of quota)
+📍 Geocoding   →  OpenWeatherMap → Open-Meteo (keyless)
 ```
 
 ## Quick Start
@@ -127,6 +130,7 @@ kisan-mitra/
 │   ├── services/
 │   │   ├── gemini.js            # Vision provider chain: Groq Qwen primary → Gemini failover
 │   │   ├── textProvider.js      # Text provider chain: Groq primary → Gemini fallback
+│   │   ├── weatherService.js    # Weather/geocoding failover: OWM → Open-Meteo (keyless)
 │   │   └── firebase.js          # Firestore init + per-device scan queries
 │   ├── .env.example
 │   └── package.json
@@ -208,7 +212,7 @@ Non-plant images return `disease_name: "Invalid Image"` instead of an error, and
 client-side canvas preprocessing (resize/compress) → Groq-hosted Qwen 3.8-27b multimodal classification (Gemini failover) → structured severity/confidence/treatment output with bilingual delivery and export.
 
 **AG-02 — Localized weather forecasts + crop recommendations:**
-geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecast → prompt-chained AI advisory (Groq primary, Gemini fallback) that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
+geolocation (with city-name fallback) → OpenWeatherMap/Open-Meteo current + 5-day forecast (automatic provider failover) → prompt-chained AI advisory (Groq primary, Gemini fallback) that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
 
 ## Contributors
 
