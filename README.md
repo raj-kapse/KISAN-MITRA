@@ -209,7 +209,7 @@ geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecas
 
 ## Contributors
 
-| Name | Role | GitHub |
+|| Name | Role | GitHub ||
 |------|------|--------|
 | **Raj Kapse** | Backend & API Development | [@raj-kapse](https://github.com/raj-kapse) |
 | **Siyal Kambale** | Full-Stack Lead | [@Siyalkamble](https://github.com/Siyalkamble) |
