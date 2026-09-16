@@ -83,6 +83,22 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
     stopCamera();
   };
 
+  const loadSample = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      setMode('preview');
+      onImageSelected(file);
+      stopCamera();
+    } catch (err) {
+      console.error("Failed to load sample", err);
+      alert("Failed to load sample image.");
+    }
+  };
+
   const clearSelection = () => {
     setPreview(null);
     setMode('idle');
@@ -161,6 +177,24 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
           </>
         )}
       </div>
+
+      {/* Fail-safe Samples for Demo */}
+      {mode === 'idle' && !isLoading && (
+        <div className="sample-images-section">
+          <p className="sample-title">Or try a sample:</p>
+          <div className="sample-grid">
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample1.jpg', 'tomato_blight.jpg')} disabled={disabled}>
+              <img src="/samples/sample1.jpg" alt="Sample 1" />
+            </button>
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample2.jpg', 'healthy_leaf.jpg')} disabled={disabled}>
+              <img src="/samples/sample2.jpg" alt="Sample 2" />
+            </button>
+            <button className="sample-btn" onClick={() => loadSample('/samples/sample3.jpg', 'yellow_spots.jpg')} disabled={disabled}>
+              <img src="/samples/sample3.jpg" alt="Sample 3" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

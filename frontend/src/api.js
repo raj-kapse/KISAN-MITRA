@@ -87,3 +87,19 @@ export async function getStores(lat, lon) {
   }
   return res.json();
 }
+
+/**
+ * Fetches combined AI advice based on weather + diagnosis.
+ */
+export async function getAiWeatherAdvisory(diagnosis, weather, lang) {
+  const res = await fetch(`${API_BASE}/api/weather-advisory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ diagnosis, weather, lang }),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Advisory fetch failed: ${res.status}`);
+  }
+  return res.json();
+}

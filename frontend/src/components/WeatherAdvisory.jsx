@@ -8,55 +8,24 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getWeather } from '../api';
+import { getWeather, getAiWeatherAdvisory } from '../api';
 import './WeatherAdvisory.css';
 
-/** Simple crop guidance based on weather conditions */
-function getCropAdvice(current, forecast) {
-  const tips = [];
-  if (!current) return tips;
-
-  if (current.humidity > 80) {
-    tips.push('🍄 High humidity — monitor for fungal diseases (blight, mildew). Avoid evening irrigation.');
-  }
-  if (current.humidity < 40) {
-    tips.push('💧 Low humidity — increase watering frequency. Mulch around plant bases to retain soil moisture.');
-  }
-  if (current.temp > 38) {
-    tips.push('🌡️ Extreme heat — provide shade for seedlings. Water early morning or late evening.');
-  }
-  if (current.temp < 10) {
-    tips.push('❄️ Cold conditions — cover frost-sensitive crops. Delay transplanting.');
-  }
-
-  // Check forecast for rain
-  const rainyDays = (forecast || []).filter(d => d.rain_probability > 60);
-  if (rainyDays.length >= 2) {
-    tips.push('🌧️ Rain expected this week — delay spraying pesticides. Ensure drainage channels are clear.');
-  } else if (rainyDays.length === 0 && forecast?.length > 0) {
-    tips.push('☀️ No rain forecasted — plan irrigation schedule. Consider drip irrigation for water efficiency.');
-  }
-
-  if (tips.length === 0) {
-    tips.push('✅ Weather looks favourable for farming. Continue routine crop maintenance.');
-  }
-
-  return tips;
-}
-
-function WeatherAdvisory({ lang = 'en' }) {
+function WeatherAdvisory({ lang = 'en', diagnosis }) {
   const [weather, setWeather] = useState(null);
+  const [aiAdvice, setAiAdvice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
-    fetchWeather();
-  }, []);
+    fetchWeatherAndAdvice();
+  }, [diagnosis]);
 
-  const fetchWeather = async () => {
+  const fetchWeatherAndAdvice = async () => {
     setLoading(true);
     setError(null);
+    setAiAdvice(null);
 
     try {
       // Request browser geolocation
@@ -76,13 +45,22 @@ function WeatherAdvisory({ lang = 'en' }) {
       });
 
       const { latitude, longitude } = position.coords;
-      const result = await getWeather(latitude, longitude);
+      const weatherResult = await getWeather(latitude, longitude);
 
-      if (result.success) {
-        setWeather({ current: result.current, forecast: result.forecast });
-      } else {
-        throw new Error(result.error || 'Failed to fetch weather data');
+      if (!weatherResult.success) {
+        throw new Error(weatherResult.error || 'Failed to fetch weather data');
       }
+      
+      setWeather({ current: weatherResult.current, forecast: weatherResult.forecast });
+
+      // If we have a diagnosis, fetch combined AI advice!
+      if (diagnosis && weatherResult.current) {
+        const aiResult = await getAiWeatherAdvisory(diagnosis, weatherResult.current, lang);
+        if (aiResult.success) {
+          setAiAdvice(aiResult.advice);
+        }
+      }
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -114,7 +92,6 @@ function WeatherAdvisory({ lang = 'en' }) {
   if (!weather) return null;
 
   const { current, forecast } = weather;
-  const advice = getCropAdvice(current, forecast);
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -156,15 +133,22 @@ function WeatherAdvisory({ lang = 'en' }) {
         </div>
       )}
 
-      {/* Crop advisory */}
-      <div className="crop-advice">
-        <h4>{lang === 'hi' ? '🌾 फसल सुझाव' : '🌾 Crop Advice'}</h4>
-        <ul>
-          {advice.map((tip, i) => (
-            <li key={i}>{tip}</li>
-          ))}
-        </ul>
-      </div>
+      {/* AI Combined Crop Advisory (Phase 3 Requirement) */}
+      {aiAdvice ? (
+        <div className="crop-advice ai-advice">
+          <h4>{lang === 'hi' ? '🤖 AI फसल एवं मौसम सुझाव' : '🤖 AI Crop & Weather Advisory'}</h4>
+          <p>{aiAdvice}</p>
+        </div>
+      ) : (
+        <div className="crop-advice">
+          <h4>{lang === 'hi' ? '🌾 सामान्य मौसम सुझाव' : '🌾 General Weather Advice'}</h4>
+          <ul>
+            {getCropAdvice(current, forecast).map((tip, i) => (
+              <li key={i}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

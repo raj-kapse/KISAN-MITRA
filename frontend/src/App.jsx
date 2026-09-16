@@ -176,7 +176,7 @@ function App() {
                 <DiagnosisResult diagnosis={diagnosis} lang={lang} />
 
                 {/* Weather advisory */}
-                <WeatherAdvisory lang={lang} />
+                <WeatherAdvisory lang={lang} diagnosis={diagnosis} />
 
                 {/* Scan again */}
                 <button className="scan-again-btn" onClick={handleScanAgain}>

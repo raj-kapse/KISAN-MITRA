@@ -104,20 +104,33 @@
 
 /* Crop advice */
 .crop-advice {
-  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-md);
   padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
 }
 
 .crop-advice h4 {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
   margin-bottom: var(--space-sm);
+}
+
+.crop-advice.ai-advice {
+  background: #f0fdf4;
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid #b7e4c7;
+  border-left: 4px solid var(--color-primary);
+}
+
+.crop-advice.ai-advice h4 {
+  color: var(--color-primary-dark);
 }
 
 .crop-advice ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .crop-advice li {

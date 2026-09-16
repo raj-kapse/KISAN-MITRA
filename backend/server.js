@@ -41,11 +41,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // --- Routes ---
 app.use('/api', healthRoutes);
-app.use('/api', diagnoseRoutes);
 const weatherRoutes = require('./routes/weather');
+const weatherAdvisoryRoutes = require('./routes/weatherAdvisory');
 const historyRoutes = require('./routes/history');
 const storesRoutes = require('./routes/stores');
+
+app.use('/api', diagnoseRoutes);
 app.use('/api', weatherRoutes);
+app.use('/api', weatherAdvisoryRoutes);
 app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
 

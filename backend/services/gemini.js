@@ -136,6 +136,37 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   }
 }
 
+/**
+ * Generate a highly contextual piece of advice based on BOTH the disease and the weather.
+ */
+async function generateWeatherAdvisory(diagnosis, weather, lang) {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    let promptText = `You are an expert agricultural advisor. 
+The farmer's crop has been diagnosed with: ${diagnosis.disease_name}.
+The current weather forecast is: ${weather.temp}°C, ${weather.description}, Humidity: ${weather.humidity}%.
+
+Provide exactly 2-3 sentences of critical farming advice combining these two factors. 
+Do not hallucinate. Be direct and actionable.`;
+
+    if (lang === 'hi') {
+      promptText += `\n\nProvide the response strictly in Hindi (Devanagari script).`;
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: promptText
+    });
+
+    return response.text.trim();
+  } catch (error) {
+    console.error('Gemini Weather Advisory Error:', error);
+    throw new Error('Failed to generate weather advisory');
+  }
+}
+
 module.exports = {
   diagnoseCropDisease,
+  generateWeatherAdvisory
 };
