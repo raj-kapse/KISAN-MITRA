@@ -13,7 +13,7 @@
  *   otherwise rule-based tips
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
 import './WeatherAdvisory.css';
 
@@ -29,11 +29,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
   const [manualLoading, setManualLoading] = useState(false);
   const [manualCity, setManualCity] = useState(null);
 
-  useEffect(() => {
-    fetchWeatherAndAdvice();
-  }, [diagnosis]);
-
-  const fetchWeatherAndAdvice = async () => {
+  const fetchWeatherAndAdvice = useCallback(async () => {
     setLoading(true);
     setError(null);
     setAiAdvice(null);
@@ -81,7 +77,13 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [manualCity, diagnosis, lang]);
+
+  // (Re)fetch whenever a diagnosis arrives, the language changes, or a
+  // manual city is chosen — the effect deps cover all three.
+  useEffect(() => {
+    fetchWeatherAndAdvice();
+  }, [fetchWeatherAndAdvice]);
 
   /** Manual city fallback — resolve city name to coordinates, then fetch weather */
   const handleManualSearch = async (e) => {
@@ -93,10 +95,9 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
     setManualError(null);
     try {
       const loc = await geocodeCity(q);
-      setManualCity(loc); // remember so Retry/refresh reuses the city, not geolocation
+      setManualCity(loc); // triggers the fetch effect with the new coordinates
       setCityQuery('');
       setShowManualInput(false);
-      await fetchWeatherAndAdvice();
     } catch (err) {
       setManualError(err.message);
     } finally {

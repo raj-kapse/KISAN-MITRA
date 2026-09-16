@@ -1,6 +1,47 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import './CameraCapture.css';
 
+/**
+ * Downscale + compress an image file client-side via canvas.
+ * Caps the longest edge at 1024px and re-encodes as JPEG q0.85.
+ * Shrinks typical phone photos 5-10x — faster uploads on rural
+ * bandwidth and a smaller Gemini payload. Returns the original
+ * file untouched if it is already small enough.
+ */
+async function compressImage(file) {
+  const MAX_EDGE = 1024;
+  const QUALITY = 0.85;
+
+  if (!file.type.startsWith('image/')) return file;
+
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode failed')); };
+      image.src = url;
+    });
+
+    const longest = Math.max(img.naturalWidth, img.naturalHeight);
+    if (longest <= MAX_EDGE && file.size < 400 * 1024) return file;
+
+    const scale = Math.min(1, MAX_EDGE / longest);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', QUALITY)
+    );
+    if (!blob || blob.size >= file.size) return file; // compression made it bigger — keep original
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file; // any failure: use the original file
+  }
+}
+
 function CameraCapture({ onImageSelected, disabled, isLoading }) {
   const [mode, setMode] = useState('idle'); // 'idle', 'camera', 'preview'
   const [preview, setPreview] = useState(null);
@@ -8,6 +49,18 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  const previewUrlRef = useRef(null);
+
+  /** Compress, then show the file as preview (revoking the previous object URL). */
+  const showPreview = async (file) => {
+    const compressed = await compressImage(file);
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const url = URL.createObjectURL(compressed);
+    previewUrlRef.current = url;
+    setPreview(url);
+    setMode('preview');
+    onImageSelected(compressed);
+  };
 
   // Stop camera stream safely
   const stopCamera = useCallback(() => {
@@ -58,10 +111,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-        const url = URL.createObjectURL(file);
-        setPreview(url);
-        setMode('preview');
-        onImageSelected(file);
+        showPreview(file);
         stopCamera();
       }
     }, 'image/jpeg', 0.9);
@@ -76,10 +126,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    setMode('preview');
-    onImageSelected(file);
+    showPreview(file);
     stopCamera();
   };
 
@@ -88,10 +135,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
       const response = await fetch(url);
       const blob = await response.blob();
       const file = new File([blob], filename, { type: 'image/jpeg' });
-      const objectUrl = URL.createObjectURL(file);
-      setPreview(objectUrl);
-      setMode('preview');
-      onImageSelected(file);
+      showPreview(file);
       stopCamera();
     } catch (err) {
       console.error("Failed to load sample", err);
@@ -100,6 +144,10 @@ function CameraCapture({ onImageSelected, disabled, isLoading }) {
   };
 
   const clearSelection = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreview(null);
     setMode('idle');
     onImageSelected(null);
