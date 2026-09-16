@@ -301,11 +301,11 @@ kisan-mitra/
 
 ## 👥 Contributors
 
-| Name                    | Role                            | GitHub                                       |
-| :---------------------- | :------------------------------ | :------------------------------------------- |
-| **Siyal Kambale** | Full-Stack Lead, AI Integration | [@siyal](https://github.com/your-username)    |
-| **Raj**           | Backend & API Development       | [@raj](https://github.com/raj-username)       |
-| **Naveen**        | Frontend & PWA Development      | [@naveen](https://github.com/naveen-username) |
+| Name                    | Role                            | GitHub                                         |
+| :---------------------- | :------------------------------ | :--------------------------------------------- |
+| **Siyal Kambale** | Full-Stack Lead, AI Integration | [Siyal Kambale](https://github.com/Siyalkamble) |
+| **Raj**           | Backend & API Development       | [Raj Kapse](https://github.com/raj-kapse)       |
+| **Naveen**        | Frontend & PWA Development      | [Naveen Thakur](https://github.com/nav54877)    |
 
 ---
 
