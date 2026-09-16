@@ -10,7 +10,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background-color: #000; /* Dark background for camera feel */
+  background-color: var(--color-text); /* dark camera backdrop */
   border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;
@@ -22,14 +22,14 @@
   position: absolute;
   width: 40px;
   height: 40px;
-  border-color: rgba(255, 255, 255, 0.8);
+  border-color: var(--color-text-on-dark);
   border-style: solid;
   z-index: 10;
   transition: all 0.3s ease;
 }
 
 .viewfinder-frame.is-scanning .corner {
-  border-color: var(--color-primary-light);
+  border-color: var(--color-accent-cta);
   transform: scale(1.05);
 }
 
@@ -61,8 +61,8 @@
   left: 0;
   width: 100%;
   height: 4px;
-  background: var(--color-primary-light);
-  box-shadow: 0 0 10px 2px var(--color-primary-light);
+  background: var(--color-accent-cta);
+  box-shadow: 0 0 10px 2px var(--color-accent-cta);
   opacity: 0.7;
   z-index: 15;
   animation: scan-sweep 2s ease-in-out infinite;
@@ -77,9 +77,11 @@
 
 /* Internal elements */
 .capture-placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-on-dark);
+  opacity: 0.85;
   text-align: center;
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,7 +90,7 @@
 
 .placeholder-icon {
   font-size: 2.5rem;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .camera-video {
@@ -121,11 +123,12 @@
 }
 
 .capture-btn {
+  min-height: 48px;
   padding: var(--space-sm) var(--space-md);
   font-family: inherit;
   font-size: var(--font-size-base);
-  font-weight: 600;
-  border: none;
+  font-weight: var(--weight-semibold);
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
@@ -135,23 +138,26 @@
 }
 
 .capture-btn.primary {
+  /* Solid brand fill — no outline style (bright-sunlight rule) */
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-dark);
 }
 .capture-btn.primary:active {
   transform: scale(0.97);
 }
 
 .capture-btn.upload {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text);
 }
 .capture-btn.upload:active {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--color-surface-tint);
 }
 
 .capture-btn.secondary {
   color: var(--color-text-light);
+  font-weight: var(--weight-semibold);
   text-decoration: underline;
 }
 
@@ -165,26 +171,26 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  border: 4px solid var(--color-border);
+  background: var(--color-text-on-dark);
+  border: 4px solid var(--color-border-strong);
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .shutter-inner {
   width: 100%;
   height: 100%;
-  background: white;
+  background: var(--color-primary);
   border-radius: 50%;
   transition: transform 0.1s;
 }
 
 .capture-btn.shutter:active .shutter-inner {
   transform: scale(0.9);
-  background: var(--color-border);
+  background: var(--color-primary-dark);
 }
 
 /* Fail-safe Samples */
@@ -195,6 +201,7 @@
 
 .sample-title {
   font-size: var(--font-size-xs);
+  font-weight: var(--weight-semibold);
   color: var(--color-text-light);
   margin-bottom: var(--space-xs);
   text-transform: uppercase;
@@ -211,12 +218,12 @@
   width: 60px;
   height: 60px;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-strong);
   padding: 0;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s, border-color 0.2s;
-  background: #eee;
+  background: var(--color-surface-tint);
 }
 
 .sample-btn:hover {

@@ -18,13 +18,15 @@
 }
 
 .back-btn {
-  padding: var(--space-xs) var(--space-sm);
-  background: none;
-  border: 1px solid var(--color-border);
+  min-height: 48px;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
-  color: var(--color-text-light);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
 
 .history-loading, .history-error, .history-empty {
@@ -52,15 +54,15 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);
-  border-left: 4px solid var(--color-warning);
+  border-left: 4px solid var(--color-status-moderate);
 }
 
 .history-item.healthy {
-  border-left-color: var(--color-success);
+  border-left-color: var(--color-status-healthy);
 }
 
 .history-item.diseased {
-  border-left-color: #e9c46a;
+  border-left-color: var(--color-status-moderate);
 }
 
 .history-item-main {
@@ -81,7 +83,7 @@
 }
 
 .history-disease {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   font-size: var(--font-size-base);
   color: var(--color-text);
 }
@@ -99,9 +101,28 @@
   flex-shrink: 0;
 }
 
-.history-conf.high { background: #d4edda; color: #155724; }
-.history-conf.medium { background: #fff3cd; color: #856404; }
-.history-conf.low { background: #f8d7da; color: #721c24; }
+.history-conf {
+  font-weight: var(--weight-bold);
+  font-size: var(--font-size-sm);
+  padding: 4px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.history-conf.high {
+  background: var(--color-status-healthy-bg);
+  color: var(--color-status-healthy-strong);
+}
+
+.history-conf.medium {
+  background: var(--color-status-moderate-bg);
+  color: var(--color-status-moderate-strong);
+}
+
+.history-conf.low {
+  background: var(--color-status-severe-bg);
+  color: var(--color-status-severe-strong);
+}
 
 .history-date {
   display: block;
@@ -113,10 +134,12 @@
 
 .retry-btn {
   margin-top: var(--space-sm);
+  min-height: 48px;
   padding: var(--space-xs) var(--space-md);
   background: var(--color-primary);
-  color: white;
-  border: none;
+  color: var(--color-text-on-dark);
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  font-weight: var(--weight-semibold);
 }

@@ -13,6 +13,7 @@
   text-align: center;
   color: var(--color-text-light);
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,13 +22,14 @@
 
 .weather-title {
   font-size: var(--font-size-lg);
+  font-weight: var(--weight-semibold);
   color: var(--color-primary-dark);
   margin-bottom: var(--space-md);
 }
 
 /* Current weather */
 .current-weather {
-  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  background: var(--color-info-bg);
   border-radius: var(--radius-md);
   padding: var(--space-md);
   margin-bottom: var(--space-md);
@@ -42,7 +44,7 @@
 
 .current-temp {
   font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--color-text);
 }
 
@@ -50,6 +52,8 @@
   display: flex;
   flex-direction: column;
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
   text-transform: capitalize;
 }
 
@@ -62,6 +66,7 @@
   display: flex;
   gap: var(--space-md);
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   color: var(--color-text-light);
   flex-wrap: wrap;
 }
@@ -80,26 +85,28 @@
   min-width: 60px;
   text-align: center;
   padding: var(--space-sm);
-  background: #f8fafc;
+  background: var(--color-surface-tint);
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .forecast-day-name {
-  font-weight: 700;
-  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-dark);
 }
 
 .forecast-temp {
   color: var(--color-text);
+  font-weight: var(--weight-semibold);
 }
 
 .forecast-rain {
-  color: #3b82f6;
+  color: var(--color-info);
   font-size: 0.7rem;
+  font-weight: var(--weight-semibold);
 }
 
 /* Crop advice */
@@ -111,20 +118,21 @@
 
 .crop-advice h4 {
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
   margin-bottom: var(--space-sm);
 }
 
 .crop-advice.ai-advice {
-  background: #f0fdf4;
+  background: var(--color-status-healthy-bg);
   padding: var(--space-md);
   border-radius: var(--radius-sm);
-  border: 1px solid #b7e4c7;
-  border-left: 4px solid var(--color-primary);
+  border: 1px solid var(--color-status-healthy);
+  border-left: 5px solid var(--color-status-healthy);
 }
 
 .crop-advice.ai-advice h4 {
-  color: var(--color-primary-dark);
+  color: var(--color-status-healthy-strong);
 }
 
 .crop-advice ul {
@@ -141,46 +149,53 @@
 
 .retry-btn {
   margin-top: var(--space-sm);
+  min-height: 48px;
   padding: var(--space-xs) var(--space-md);
   background: var(--color-primary);
-  color: white;
-  border: none;
+  color: var(--color-text-on-dark);
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
 }
 
 .retry-btn.manual-toggle {
-  margin-left: var(--space-xs);
-  background: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  border: 2px solid var(--color-primary-dark);
 }
 
 /* Manual city search (fallback when geolocation is denied) */
 .manual-city-form {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   margin-top: var(--space-sm);
 }
 
 .manual-city-form input {
   flex: 1;
   min-width: 0;
+  min-height: 48px;
   padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border, #ccc);
+  border: 2px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .manual-city-form button {
-  padding: var(--space-xs) var(--space-sm);
+  min-height: 48px;
+  padding: var(--space-xs) var(--space-md);
   background: var(--color-primary);
-  color: white;
-  border: none;
+  color: var(--color-text-on-dark);
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
 }
 
 .manual-city-form button:disabled {
@@ -191,15 +206,18 @@
 .manual-error {
   display: block;
   margin-top: var(--space-xs);
-  color: #b91c1c;
+  color: var(--color-status-severe-strong);
+  font-weight: var(--weight-medium);
 }
 
 .location-switch {
   margin-top: var(--space-sm);
+  min-height: 48px;
   background: none;
   border: none;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   text-decoration: underline;
   padding: 0;

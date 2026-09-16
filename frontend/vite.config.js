@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'Kisan Mitra AI',
         short_name: 'Kisan Mitra',
         description: 'AI-powered crop health and advisory app for Indian farmers',
-        theme_color: '#2d6a4f',
+        theme_color: '#2E5F3E',
         icons: [
           {
             src: 'icon-192.png',

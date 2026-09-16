@@ -19,7 +19,7 @@
   width: 30px; height: 30px;
   border-bottom: 2px solid var(--color-border);
   border-left: 2px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-surface-tint);
   border-bottom-left-radius: 8px;
 }
 
@@ -33,11 +33,11 @@
 }
 
 .diagnosis-header.healthy {
-  background: #f0fdf4;
+  background: var(--color-status-healthy-bg);
 }
 
 .diagnosis-header.diseased {
-  background: #fffbeb;
+  background: var(--color-status-moderate-bg);
 }
 
 .diagnosis-title {
@@ -48,7 +48,7 @@
 
 .disease-name {
   font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   line-height: 1.1;
   color: var(--color-text);
   margin: 0;
@@ -56,6 +56,7 @@
 
 .crop-badge {
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   color: var(--color-text-light);
   display: inline-flex;
   align-items: center;
@@ -65,7 +66,7 @@
 /* --- Confidence badge --- */
 .confidence-badge {
   font-size: var(--font-size-lg);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   padding: 4px 12px;
   border-radius: 4px;
   border: 2px solid currentColor;
@@ -74,29 +75,30 @@
 }
 
 .confidence-badge.high {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-status-healthy-bg);
+  color: var(--color-status-healthy-strong);
 }
 
 .confidence-badge.medium {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--color-status-moderate-bg);
+  color: var(--color-status-moderate-strong);
 }
 
 .confidence-badge.low {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--color-status-severe-bg);
+  color: var(--color-status-severe-strong);
 }
 
 /* --- Low confidence warning --- */
 .low-confidence-warning {
   margin: 0 var(--space-lg);
   padding: var(--space-md);
-  background: #fff3cd;
-  border: 1px solid #ffc107;
+  background: var(--color-status-moderate-bg);
+  border: 2px solid var(--color-status-moderate);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  color: #856404;
+  font-weight: var(--weight-semibold);
+  color: var(--color-status-moderate-strong);
   text-align: center;
 }
 
@@ -110,12 +112,14 @@
 
 .info-label {
   font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   color: var(--color-text-light);
 }
 
 .severity-badge {
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
 
 /* --- Sections --- */
@@ -126,7 +130,7 @@
 
 .diagnosis-section h4 {
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-bottom: var(--space-sm);
   color: var(--color-primary-dark);
 }
@@ -156,10 +160,10 @@
   position: absolute;
   left: var(--space-sm);
   color: var(--color-primary);
-  font-weight: bold;
+  font-weight: var(--weight-bold);
 }
 
-/* --- Treatment cards --- */
+/* --- Treatment cards (solid left bars, token tints) --- */
 .treatment-section {
   padding-bottom: var(--space-lg);
 }
@@ -176,7 +180,7 @@
 
 .treatment-type {
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   display: block;
   margin-bottom: var(--space-xs);
 }
@@ -186,18 +190,30 @@
 }
 
 .treatment-card.chemical {
-  background: #e8f4fd;
-  border-left: 3px solid #2196f3;
+  background: var(--color-info-bg);
+  border-left: 5px solid var(--color-info);
+}
+
+.treatment-card.chemical .treatment-type {
+  color: var(--color-info);
 }
 
 .treatment-card.organic {
-  background: #e8f5e9;
-  border-left: 3px solid #4caf50;
+  background: var(--color-status-healthy-bg);
+  border-left: 5px solid var(--color-status-healthy);
+}
+
+.treatment-card.organic .treatment-type {
+  color: var(--color-status-healthy-strong);
 }
 
 .treatment-card.preventive {
-  background: #fff8e1;
-  border-left: 3px solid #ff9800;
+  background: var(--color-status-moderate-bg);
+  border-left: 5px solid var(--color-status-moderate);
+}
+
+.treatment-card.preventive .treatment-type {
+  color: var(--color-status-moderate-strong);
 }
 
 /* --- Healthy message --- */
@@ -205,20 +221,21 @@
   padding: var(--space-lg);
   text-align: center;
   font-size: var(--font-size-base);
-  color: var(--color-success);
-  font-weight: 500;
-  border-top: 1px solid var(--color-border);
+  font-weight: var(--weight-semibold);
+  color: var(--color-status-healthy-strong);
+  background: var(--color-status-healthy-bg);
+  border-top: 2px solid var(--color-status-healthy);
 }
 
 .yield-risk-row {
-  background: #fff5f5;
-  border-bottom: 1px solid #fed7d7;
+  background: var(--color-status-severe-bg);
+  border-bottom: 1px solid var(--color-status-severe);
   padding: var(--space-sm) var(--space-lg);
 }
 
 .yield-risk-badge {
-  font-weight: 700;
-  color: #c53030;
+  font-weight: var(--weight-bold);
+  color: var(--color-status-severe-strong);
   font-size: var(--font-size-sm);
 }
 
@@ -228,16 +245,18 @@
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-surface-tint);
 }
 
 .action-btn {
   flex: 1;
+  /* Solid fills, minimum comfortable tap height */
+  min-height: 48px;
   padding: var(--space-sm) var(--space-xs);
-  border: none;
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: transform 0.1s, opacity 0.2s;
   font-family: inherit;
@@ -248,21 +267,21 @@
 }
 
 .whatsapp-btn {
-  background: #25D366;
-  color: white;
+  background: #128C4B; /* WhatsApp brand tone adjusted for 4.6:1 with white */
+  color: #FFFFFF;
 }
 
 .whatsapp-btn:hover {
-  background: #20bd5a;
+  background: #0E7A40;
 }
 
 .print-btn {
-  background: var(--color-border);
-  color: var(--color-text);
+  background: var(--color-primary-dark);
+  color: var(--color-text-on-dark);
 }
 
 .print-btn:hover {
-  background: #d1d5db;
+  background: var(--color-text);
 }
 
 /* --- Print Styles --- */
@@ -270,11 +289,11 @@
   body * {
     visibility: hidden;
   }
-  
+
   .diagnosis-result, .diagnosis-result * {
     visibility: visible;
   }
-  
+
   .diagnosis-result {
     position: absolute;
     left: 0;
@@ -284,7 +303,7 @@
     border: none;
     box-shadow: none;
   }
-  
+
   .no-print, .store-locator-btn, .store-locator-results {
     display: none !important;
   }

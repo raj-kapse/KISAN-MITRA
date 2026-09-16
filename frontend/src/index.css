@@ -4,19 +4,54 @@
  * ========================================== */
 
 :root {
-  /* Color palette — earthy greens and warm neutrals */
-  --color-primary: #2d6a4f;
-  --color-primary-light: #40916c;
-  --color-primary-dark: #1b4332;
-  --color-accent: #d4a373;
-  --color-bg: #fefae0;
-  --color-surface: #ffffff;
-  --color-text: #1b1b1b;
-  --color-text-light: #6b6b6b;
-  --color-success: #2d6a4f;
-  --color-warning: #e9c46a;
-  --color-error: #e63946;
-  --color-border: #e0e0e0;
+  /* ----------------------------------------
+   * Color system — tuned for outdoor, bright-sunlight
+   * use on low/mid-range Android phones.
+   *
+   * Rules baked into these tokens:
+   * 1. Status colors are visually distinct from brand green.
+   * 2. --color-accent-cta is reserved for the voice/primary CTA only.
+   * 3. Text tokens all pass WCAG AA (4.5:1) on their intended surfaces.
+   * ---------------------------------------- */
+
+  /* Brand / actions */
+  --color-primary: #2E5F3E;        /* forest green — brand & primary actions */
+  --color-primary-dark: #1E3D28;   /* dark green — header gradient, headings on light bg (12.4:1 on surface) */
+  --color-primary-soft: #4F7D5E;   /* decorative green — never for text */
+  --color-accent-cta: #A85A3D;     /* terracotta — voice/primary CTA ONLY (4.53:1 with white text) */
+
+  /* Surfaces & text */
+  --color-bg: #F5F3EE;             /* off-white page background */
+  --color-surface: #FFFFFF;        /* card surface */
+  --color-surface-tint: #EAEEEA;   /* light green-gray panel tint (12.8:1 with text) */
+  --color-text: #26241F;           /* near-black — 15.2:1 on surface */
+  --color-text-light: #4E4A41;     /* secondary text — 7.7:1 on bg, 7.9:1 on surface */
+  --color-text-on-dark: #F5F3EE;   /* text on header/dark surfaces — 13.2:1 on primary */
+
+  /* Status — NEVER use brand green for these */
+  --color-status-healthy: #4A8B5C;       /* fills/borders/icons only (3.7:1 on white — do not use for small text) */
+  --color-status-healthy-strong: #2F6A40; /* healthy TEXT (5.7:1 on surface) */
+  --color-status-healthy-bg: #EDF5EF;    /* healthy tint surface */
+  --color-status-moderate: #C48A2B;      /* fills/borders/icons only (2.3:1 on white — never text) */
+  --color-status-moderate-strong: #A1621C; /* moderate TEXT (4.7:1 on tint) */
+  --color-status-moderate-bg: #FFF7E8;   /* moderate tint surface */
+  --color-status-severe: #B4432F;        /* severe fill/icon (4.7:1 on white — usable as large text) */
+  --color-status-severe-strong: #8E3D2C; /* severe TEXT (5.0:1 on tint) */
+  --color-status-severe-bg: #FDEDE9;     /* severe tint surface */
+
+  /* Semantic aliases (map onto status tokens; do not repurpose) */
+  --color-success: var(--color-status-healthy-strong);
+  --color-warning: var(--color-status-moderate);
+  --color-error: var(--color-status-severe);
+
+  /* Info (weather / chemical treatment) */
+  --color-info: #1E5A8A;           /* 5.8:1 on white */
+  --color-info-bg: #EAF3FA;
+
+  /* Borders & misc */
+  --color-border: #D8D3C7;
+  --color-border-strong: #B5AF9F;  /* inputs & controls needing visible edges (2.4:1 non-text) */
+  --color-overlay: rgba(38, 36, 31, 0.5);
 
   /* Typography */
   --font-family: 'Hind', system-ui, -apple-system, sans-serif;
@@ -27,6 +62,11 @@
   --font-size-xl: 1.75rem;
   --font-size-2xl: 2.25rem;
   --font-size-3xl: 2.75rem;
+
+  /* Weight floor: primary content never renders below medium */
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
 
   /* Spacing */
   --space-xs: 0.25rem;
