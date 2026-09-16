@@ -1,6 +1,6 @@
 # 🌾 Kisan Mitra — AI Crop Health & Advisory App
 
-> **Instant crop disease diagnosis and hyper-local weather advisory for Indian farmers, powered by Google Gemini's multimodal AI.**
+> **Instant crop disease diagnosis and hyper-local weather advisory for Indian farmers — a multi-provider AI stack (Groq + Google Gemini) with automatic failover.**
 >
 > Built for the hackathon problem statements:
 > - **AG-01** — Smart crop disease detection using image processing and machine learning
@@ -8,7 +8,7 @@
 
 ## What It Does
 
-A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — Gemini handles the vision + language in a single API call.
+A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — a Groq-hosted multimodal model (Qwen 3.8-27b) handles the vision + language in a single API call, with Google Gemini as automatic backup.
 
 ## Key Features
 
@@ -35,28 +35,37 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 |-------|-----------|-----|
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
-| **AI Engine** | Google Gemini 3.6 Flash (multimodal) | No model hosting needed — one API call returns diagnosis + confidence + treatment + Hindi translation as structured JSON |
+| **AI Engine** | **Groq · Qwen 3.8-27b** (primary, multimodal) + **Google Gemini 3.x Flash** (failover chain) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
 | **Weather** | OpenWeatherMap | Free tier, 5-day forecast, geocoding for city fallback, metric units |
 | **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
 | **Stores** | OpenStreetMap Overpass API | Free, no API key, farm-shop POIs |
 
-### Why Gemini Instead of a Custom Model
+### Why a Multi-Provider AI Stack Instead of a Custom Model
 
 Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) on labeled datasets like PlantVillage, hosting the model, and maintaining a fixed set of disease classes. We chose a different approach:
 
-- **Gemini's multimodal API** (3.6 Flash) accepts a raw leaf image and returns a diagnosis directly — no training pipeline, no model weights to manage, no GPU hosting
+- **Groq-hosted Qwen 3.8-27b is the primary engine** — a multimodal model that accepts a raw leaf image and returns the full diagnosis as strict JSON in ~1-2 seconds; Groq's free tier allows ~1,000 requests/day with no card required
+- **Google Gemini (3.6 Flash → 3.5 Flash-Lite → 3.5 Flash) is the automatic failover** — each model has its own free-tier daily quota, and the backend walks the chain whenever the primary is out of quota or congested. One provider's bad day cannot take the demo down
 - A single API call returns disease name, confidence, severity, symptoms, treatment options, yield risk, and crop identification — all as structured JSON
 - Hindi translations are generated in the same call, not through a separate translation layer
 - The model generalises to crops and diseases beyond any fixed training set
 - Client-side canvas preprocessing (resize/compress) keeps uploads fast on rural networks
-- Trade-off: requires network connectivity and depends on Gemini's availability. For a hackathon prototype targeting connected users, this is the right call
+- Trade-off: requires network connectivity and depends on provider availability. For a hackathon prototype targeting connected users, this is the right call
+
+#### Provider chain (all automatic, zero user-facing differences)
+
+```
+📷 Diagnosis   →  Groq/Qwen 3.8-27b → gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash
+💬 Chatbot     →  Groq/Qwen 3.8-27b → Gemini
+🌦️ Advisory    →  Groq/Qwen 3.8-27b → Gemini
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- API keys: [Google Gemini](https://aistudio.google.com/apikey), [OpenWeatherMap](https://openweathermap.org/api) (free tier)
+- API keys (all free): [Groq](https://console.groq.com) (primary AI), [Google Gemini](https://aistudio.google.com/apikey) (backup AI), [OpenWeatherMap](https://openweathermap.org/api)
 - Optional: [Firebase project](https://console.firebase.google.com/) for scan history
 
 ### Setup
@@ -83,7 +92,9 @@ npm run dev             # http://localhost:5173
 Create `backend/.env` (see `backend/.env.example`):
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key          # primary AI (free, no card)
+GROQ_MODEL=qwen/qwen3.8-27b
+GEMINI_API_KEY=your_gemini_api_key      # automatic fallback
 OPENWEATHER_API_KEY=your_openweather_api_key
 FIREBASE_PROJECT_ID=your_firebase_project_id   # optional
 FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json  # optional
@@ -91,6 +102,8 @@ PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 ```
+
+See `backend/.env.example` for all options, including per-model Gemini failover overrides.
 
 ## Project Structure
 
@@ -102,15 +115,16 @@ kisan-mitra/
 │   │   └── rateLimit.js         # In-memory per-IP rate limiter (no deps)
 │   ├── routes/
 │   │   ├── health.js            # GET  /api/health, /api/ping
-│   │   ├── diagnose.js          # POST /api/diagnose (image upload → Gemini)
+│   │   ├── diagnose.js          # POST /api/diagnose (image upload → Groq/Gemini vision chain)
 │   │   ├── weather.js           # GET  /api/weather?lat=&lon=
-│   │   ├── weatherAdvisory.js   # POST /api/weather-advisory (diagnosis + weather → Gemini)
+│   │   ├── weatherAdvisory.js   # POST /api/weather-advisory (diagnosis + weather → Groq/Gemini)
 │   │   ├── geocode.js           # GET  /api/geocode?q=<city> (manual location fallback)
 │   │   ├── history.js           # GET/POST /api/history (device-scoped)
 │   │   ├── stores.js            # GET  /api/stores?lat=&lon= (Overpass)
 │   │   └── chat.js              # POST /api/chat (context-aware assistant)
 │   ├── services/
-│   │   ├── gemini.js            # Gemini 3.6 Flash client: diagnosis, advisory, chat
+│   │   ├── gemini.js            # Vision provider chain: Groq Qwen primary → Gemini failover
+│   │   ├── textProvider.js      # Text provider chain: Groq primary → Gemini fallback
 │   │   └── firebase.js          # Firestore init + per-device scan queries
 │   ├── .env.example
 │   └── package.json
@@ -188,10 +202,10 @@ Non-plant images return `disease_name: "Invalid Image"` instead of an error, and
 ## Hackathon Topic Coverage
 
 **AG-01 — Smart crop disease detection (image processing + ML):**
-client-side canvas preprocessing (resize/compress) → Gemini 3.6 Flash multimodal classification → structured severity/confidence/treatment output with bilingual delivery and export.
+client-side canvas preprocessing (resize/compress) → Groq-hosted Qwen 3.8-27b multimodal classification (Gemini failover) → structured severity/confidence/treatment output with bilingual delivery and export.
 
 **AG-02 — Localized weather forecasts + crop recommendations:**
-geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecast → prompt-chained Gemini advisory that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
+geolocation (with city-name fallback) → OpenWeatherMap current + 5-day forecast → prompt-chained AI advisory (Groq primary, Gemini fallback) that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
 
 ## Contributors
 
