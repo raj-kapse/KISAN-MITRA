@@ -8,8 +8,14 @@
 const express = require('express');
 const multer = require('multer');
 const { diagnoseCropDisease } = require('../services/gemini');
+const { aiRateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
+
+// Minimum acceptable image size in bytes. A valid compressed JPEG/PNG of
+// a leaf is always larger than 1 KB; anything smaller is an empty file,
+// a corrupt upload, or a 1x1 placeholder pixel.
+const MIN_IMAGE_BYTES = 1024;
 
 // Supported image MIME types
 const ALLOWED_MIME_TYPES = [
@@ -42,7 +48,7 @@ const upload = multer({
  * POST /api/diagnose
  * Upload a crop/leaf image (field name 'image') and receive AI diagnosis
  */
-router.post('/diagnose', (req, res) => {
+router.post('/diagnose', aiRateLimit, (req, res) => {
   // Wrap multer middleware to handle upload validation errors gracefully
   upload.single('image')(req, res, async (err) => {
     if (err) {
@@ -81,6 +87,14 @@ router.post('/diagnose', (req, res) => {
         });
       }
 
+      // Reject empty or near-empty files before burning an AI API call
+      if (req.file.size < MIN_IMAGE_BYTES) {
+        return res.status(400).json({
+          success: false,
+          error: `Image too small (${req.file.size} bytes). Please upload a real crop/leaf photo (minimum ${MIN_IMAGE_BYTES} bytes).`,
+        });
+      }
+
       console.log(
         `🌱 Processing diagnosis request for: ${req.file.originalname} (${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)} KB)`
       );
@@ -107,3 +121,4 @@ router.post('/diagnose', (req, res) => {
 });
 
 module.exports = router;
+

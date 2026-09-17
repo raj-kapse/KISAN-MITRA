@@ -8,7 +8,7 @@
 
 ## What It Does
 
-A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — a Groq-hosted multimodal model (Qwen 3.8-27b) handles the vision + language in a single API call, with Google Gemini as automatic backup.
+A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — Google Gemini handles the vision diagnosis (with Groq Qwen fallback), while Groq handles text chat and advisory in a single API call.
 
 ## Key Features
 
@@ -39,7 +39,7 @@ A farmer photographs a crop leaf → client-side image processing (downscale/com
 | **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
 | **Design System** | CSS custom properties — outdoor-first palette | WCAG AA contrast in bright sunlight, status colors kept distinct from brand green, terracotta accent reserved for primary CTAs |
 | **Backend** | Node.js + Express | Quick to scaffold, async I/O |
-| **AI Engine** | **Groq · Qwen 3.8-27b** (primary, multimodal) + **Google Gemini 3.x Flash** (failover chain) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
+| **AI Engine** | **Google Gemini 3.x Flash** (primary for vision) + **Groq · Qwen 3.8-27b** (primary for text) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
 | **Weather** | OpenWeatherMap (primary) + Open-Meteo (keyless fallback) | Live forecast data with automatic provider failover — the app never depends on a single free key |
 | **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
 | **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
@@ -71,8 +71,9 @@ The PWA theme color (`frontend/index.html` + the manifest in `vite.config.js`) i
 
 Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) on labeled datasets like PlantVillage, hosting the model, and maintaining a fixed set of disease classes. We chose a different approach:
 
-- **Groq-hosted Qwen 3.8-27b is the primary engine** — a multimodal model that accepts a raw leaf image and returns the full diagnosis as strict JSON in ~1-2 seconds; Groq's free tier allows ~1,000 requests/day with no card required
-- **Google Gemini (3.6 Flash → 3.5 Flash-Lite → 3.5 Flash) is the automatic failover** — each model has its own free-tier daily quota, and the backend walks the chain whenever the primary is out of quota or congested. One provider's bad day cannot take the demo down
+- **Google Gemini (3.6 Flash → 3.5 Flash-Lite → 3.5 Flash) is the primary engine for vision** — it provides the best agronomic precision on subtle leaf symptoms, returning the full diagnosis as strict JSON.
+- **Groq-hosted Qwen 3.8-27b is the automatic vision failover** — a multimodal model that accepts a raw leaf image and returns the same strict JSON; Groq's free tier allows ~1,000 requests/day with no card required, ensuring the app works when Gemini is out of quota.
+- **Groq is the primary engine for text chat and advisory** — it's near-instant and doesn't consume the Gemini quota that vision diagnosis relies on.
 - A single API call returns disease name, confidence, severity, symptoms, treatment options, yield risk, and crop identification — all as structured JSON
 - Hindi translations are generated in the same call, not through a separate translation layer
 - The model generalises to crops and diseases beyond any fixed training set
@@ -82,7 +83,7 @@ Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) 
 #### Provider chain (all automatic, zero user-facing differences)
 
 ```
-📷 Diagnosis   →  Groq/Qwen 3.8-27b → gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash
+📷 Diagnosis   →  gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash → Groq/Qwen 3.8-27b
 💬 Chatbot     →  Groq/Qwen 3.8-27b → Gemini
 🌦️ Advisory    →  Groq/Qwen 3.8-27b → Gemini
 🌤️ Weather data →  OpenWeatherMap → Open-Meteo (keyless, never out of quota)
@@ -120,9 +121,10 @@ npm run dev             # http://localhost:5173
 Create `backend/.env` (see `backend/.env.example`):
 
 ```env
-GROQ_API_KEY=your_groq_api_key          # primary AI (free, no card)
+GROQ_API_KEY=your_groq_api_key          # text chat primary (free, no card)
 GROQ_MODEL=qwen/qwen3.8-27b
-GEMINI_API_KEY=your_gemini_api_key      # automatic fallback
+GEMINI_API_KEY=your_gemini_api_key      # vision primary
+DIAGNOSIS_PROVIDER_ORDER=gemini,groq
 OPENWEATHER_API_KEY=your_openweather_api_key
 FIREBASE_PROJECT_ID=your_firebase_project_id   # optional
 FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json  # optional
@@ -152,7 +154,7 @@ kisan-mitra/
 │   │   ├── chat.js              # POST /api/chat (context-aware assistant)
 │   │   └── transcribe.js        # POST /api/transcribe (voice → Groq Whisper, Hindi)
 │   ├── services/
-│   │   ├── gemini.js            # Vision provider chain: Groq Qwen primary → Gemini failover
+│   │   ├── gemini.js            # Vision provider chain: Gemini primary → Groq Qwen failover
 │   │   ├── textProvider.js      # Text provider chain: Groq primary → Gemini fallback
 │   │   ├── weatherService.js    # Weather/geocoding failover: OWM → Open-Meteo (keyless)
 │   │   └── firebase.js          # Firestore init + per-device scan queries

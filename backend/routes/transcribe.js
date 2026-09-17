@@ -9,6 +9,7 @@
 
 const express = require('express');
 const multer = require('multer');
+const { aiRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
 const GROQ_TRANSCRIBE_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
@@ -34,7 +35,7 @@ const upload = multer({
   },
 });
 
-router.post('/transcribe', (req, res) => {
+router.post('/transcribe', aiRateLimit, (req, res) => {
   upload.single('audio')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
@@ -53,6 +54,17 @@ router.post('/transcribe', (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'No audio uploaded. Provide the recording under form-data key "audio".',
+      });
+    }
+
+    // Reject near-empty recordings before they burn a Groq Whisper call.
+    // The frontend already filters recordings under 2 KB client-side, but
+    // the server enforces it too for curl / other clients.
+    const MIN_AUDIO_BYTES = 2048;
+    if (req.file.size < MIN_AUDIO_BYTES) {
+      return res.status(400).json({
+        success: false,
+        error: `Recording too short (${req.file.size} bytes). Please speak for at least a second.`,
       });
     }
 

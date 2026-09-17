@@ -124,4 +124,4 @@ async function getRecentScans(limit = 20, deviceId = null) {
   }
 }
 
-module.exports = { saveScan, getRecentScans };
+module.exports = { isFirebaseConfigured, saveScan, getRecentScans };

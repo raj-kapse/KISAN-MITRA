@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { chatComplete } = require('../services/textProvider');
+const { aiRateLimit } = require('../middleware/rateLimit');
 
 /**
  * POST /api/weather-advisory
  * Requires { diagnosis, weather, lang }
  */
-router.post('/weather-advisory', async (req, res) => {
+router.post('/weather-advisory', aiRateLimit, async (req, res) => {
   try {
     const { diagnosis, weather, lang } = req.body;
     

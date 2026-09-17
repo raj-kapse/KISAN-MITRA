@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { chatComplete } = require('../services/textProvider');
+const { aiRateLimit } = require('../middleware/rateLimit');
 
 /**
  * POST /api/chat
  * Body: { messages: [{role, content}], context: string }
  */
-router.post('/chat', async (req, res) => {
+router.post('/chat', aiRateLimit, async (req, res) => {
   try {
     const { messages, context } = req.body;
     

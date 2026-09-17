@@ -19,22 +19,33 @@ dotenv.config();
 // --- Route imports ---
 const healthRoutes = require('./routes/health');
 const diagnoseRoutes = require('./routes/diagnose');
-const { createRateLimiter } = require('./middleware/rateLimit');
-
-// Protect the free-tier AI/weather quota: generous enough for real farm
-// use, tight enough that one client can't drain it mid-demo.
-const aiRateLimit = createRateLimiter(20, 60_000); // 20 AI calls/min per IP
-const weatherRateLimit = createRateLimiter(60, 60_000); // 60 weather calls/min per IP
+const weatherRoutes = require('./routes/weather');
+const weatherAdvisoryRoutes = require('./routes/weatherAdvisory');
+const geocodeRoutes = require('./routes/geocode');
+const historyRoutes = require('./routes/history');
+const storesRoutes = require('./routes/stores');
+const chatRoutes = require('./routes/chat');
+const transcribeRoutes = require('./routes/transcribe');
 
 // --- App setup ---
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust one layer of reverse proxy (Render, Railway, Cloudflare, etc.)
+// so req.ip is the real client IP, not the proxy — essential for
+// per-client rate limiting to actually work in production.
+app.set('trust proxy', 1);
+
 // --- Middleware ---
 
-// CORS: allow frontend origin (Vite dev server or production URL)
+// CORS: allow frontend origin (Vite dev server or production URL).
+// In development, also accept localhost variants.
+const allowedOrigins = [process.env.FRONTEND_URL || 'http://localhost:5173'];
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173', 'http://127.0.0.1:5173');
+}
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: allowedOrigins,
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -46,23 +57,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // --- Routes ---
+// Rate limiters are applied INSIDE each router on the specific route
+// handler, NOT here at the mount level. Mounting them on app.use('/api',
+// limiter, router) caused every /api/* request to share one bucket —
+// hitting /api/stores would consume /api/diagnose's quota.
 app.use('/api', healthRoutes);
-const weatherRoutes = require('./routes/weather');
-const weatherAdvisoryRoutes = require('./routes/weatherAdvisory');
-const geocodeRoutes = require('./routes/geocode');
-const historyRoutes = require('./routes/history');
-const storesRoutes = require('./routes/stores');
-const chatRoutes = require('./routes/chat');
-const transcribeRoutes = require('./routes/transcribe');
-
-app.use('/api', aiRateLimit, diagnoseRoutes);
-app.use('/api', weatherRateLimit, weatherRoutes);
-app.use('/api', aiRateLimit, weatherAdvisoryRoutes);
+app.use('/api', diagnoseRoutes);
+app.use('/api', weatherRoutes);
+app.use('/api', weatherAdvisoryRoutes);
 app.use('/api', geocodeRoutes);
 app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
-app.use('/api', aiRateLimit, chatRoutes);
-app.use('/api', aiRateLimit, transcribeRoutes);
+app.use('/api', chatRoutes);
+app.use('/api', transcribeRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {
@@ -80,11 +87,14 @@ app.listen(PORT, () => {
   console.log(`\n🌾 Kisan Mitra backend running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`   Trust Proxy: enabled (1 hop)`);
   
   // Log API key status (never log the actual keys)
+  console.log(`   Groq API Key: ${process.env.GROQ_API_KEY ? '✅ Set' : '❌ Missing'}`);
   console.log(`   Gemini API Key: ${process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Missing'}`);
   console.log(`   OpenWeather Key: ${process.env.OPENWEATHER_API_KEY ? '✅ Set' : '❌ Missing'}`);
   console.log(`   Firebase Project: ${process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing'}\n`);
 });
 
 module.exports = app;
+

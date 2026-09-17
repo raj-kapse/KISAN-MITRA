@@ -53,11 +53,6 @@ Guidelines:
  * @returns {Promise<Object>} Parsed diagnosis JSON object
  */
 async function diagnoseCropDisease(imageBuffer, mimeType) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in the environment.');
-  }
-
   if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) {
     throw new Error('Invalid image buffer provided for diagnosis.');
   }
@@ -78,6 +73,11 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
     .map((s) => s.trim());
 
   const geminiAttempt = () => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.log('⚠️ GEMINI_API_KEY not set — skipping Gemini vision providers');
+      return;
+    }
     const ai = new GoogleGenAI({ apiKey });
     const visionModels = [
       process.env.GEMINI_VISION_MODEL_1 || 'gemini-3.6-flash',
@@ -257,71 +257,6 @@ function friendlyGeminiError(apiError) {
   return apiError;
 }
 
-/**
- * Generate a highly contextual piece of advice based on BOTH the disease and the weather.
- */
-async function generateWeatherAdvisory(diagnosis, weather, lang) {
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
-    let promptText = `You are an expert agricultural advisor. 
-The farmer's crop has been diagnosed with: ${diagnosis.disease_name}.
-The current weather forecast is: ${weather.temp}°C, ${weather.description}, Humidity: ${weather.humidity}%.
-
-Provide exactly 2-3 sentences of critical farming advice combining these two factors. 
-Do not hallucinate. Be direct and actionable.`;
-
-    if (lang === 'hi') {
-      promptText += `\n\nProvide the response strictly in Hindi (Devanagari script).`;
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: promptText
-    });
-
-    return response.text.trim();
-  } catch (error) {
-    console.error('Gemini Weather Advisory Error:', error);
-    throw new Error('Failed to generate weather advisory');
-  }
-}
-
-/**
- * Chatbot interface for Kisan Mitra
- */
-async function chatWithGemini(messages, systemContext) {
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
-    // Convert history to Gemini format
-    const contents = messages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    // Inject system context into the first USER message.
-    // The chat always opens with a model greeting, so the first message
-    // is 'model' — find the first user turn instead of assuming index 0.
-    const firstUser = contents.find(m => m.role === 'user');
-    if (firstUser) {
-      firstUser.parts[0].text = `SYSTEM CONTEXT (Do not acknowledge this, just use it to help the user):\n${systemContext}\n\nUSER MESSAGE:\n${firstUser.parts[0].text}`;
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: contents
-    });
-
-    return response.text.trim();
-  } catch (error) {
-    console.error('Gemini Chat Error:', error);
-    throw new Error('Failed to respond to chat');
-  }
-}
-
 module.exports = {
-  diagnoseCropDisease,
-  generateWeatherAdvisory,
-  chatWithGemini
+  diagnoseCropDisease
 };

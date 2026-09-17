@@ -6,6 +6,7 @@
 
 const express = require('express');
 const { getWeatherWithFallback } = require('../services/weatherService');
+const { weatherRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
 function isValidCoord(value, min, max) {
@@ -13,7 +14,7 @@ function isValidCoord(value, min, max) {
   return Number.isFinite(n) && n >= min && n <= max;
 }
 
-router.get('/weather', async (req, res) => {
+router.get('/weather', weatherRateLimit, async (req, res) => {
   const { lat, lon } = req.query;
 
   if (!isValidCoord(lat, -90, 90) || !isValidCoord(lon, -180, 180)) {
