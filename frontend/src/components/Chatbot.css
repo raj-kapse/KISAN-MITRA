@@ -105,6 +105,7 @@
 }
 
 [data-theme='mono'] .online-dot { background: var(--color-primary-soft); }
+[data-theme='dark'] .online-dot { background: #7FB08A; }
 
 .close-chat-btn {
   display: inline-flex;

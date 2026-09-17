@@ -306,6 +306,10 @@
   box-shadow: 0 -4px 12px rgba(22, 32, 24, 0.06);
 }
 
+[data-theme='dark'] .diagnosis-actions {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35);
+}
+
 .action-btn {
   flex: 1;
   display: inline-flex;

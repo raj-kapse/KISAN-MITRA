@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { House, History, ScanLine, User, LogOut, Moon, Palette } from 'lucide-react';
+import { House, History, ScanLine, User, LogOut, Sun, Moon, Palette } from 'lucide-react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
@@ -100,14 +100,29 @@ function App() {
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
-  // Black & white theme — persisted per browser, applied via <html data-theme>.
-  const [monoTheme, setMonoTheme] = useState(() => {
-    try { return localStorage.getItem('kisan_mitra_theme') === 'mono'; } catch { return false; }
+  // Theme — 3-way: 'light' | 'dark' | 'mono'.
+  // On first visit, respect OS preference; persisted in localStorage.
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kisan_mitra_theme');
+      if (saved === 'dark' || saved === 'mono') return saved;
+      // 'green' was the old light-theme key — treat as 'light'
+      if (matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+      return 'light';
+    } catch { return 'light'; }
   });
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', monoTheme ? 'mono' : 'default');
-    try { localStorage.setItem('kisan_mitra_theme', monoTheme ? 'mono' : 'green'); } catch { /* storage blocked */ }
-  }, [monoTheme]);
+    document.documentElement.setAttribute(
+      'data-theme',
+      theme === 'dark' ? 'dark' : theme === 'mono' ? 'mono' : 'default'
+    );
+    try { localStorage.setItem('kisan_mitra_theme', theme); } catch { /* storage blocked */ }
+  }, [theme]);
+
+  const toggleDark = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
+  const toggleMono = () => setTheme(t => (t === 'mono' ? 'light' : 'mono'));
+
+  const DARK_TOGGLE_LABEL = { en: 'Toggle dark mode', hi: 'डार्क मोड बदलें', mr: 'डार्क मोड बदला' };
 
   const handleSignedIn = (p) => {
     setProfile(p);
@@ -276,14 +291,28 @@ function App() {
                 <LogOut size={16} aria-hidden="true" />
               </button>
             )}
+            {/* Mono (B&W) theme toggle */}
             <button
               className="lang-toggle"
-              onClick={() => setMonoTheme(!monoTheme)}
+              onClick={toggleMono}
               aria-label="Toggle black & white theme"
-              aria-pressed={monoTheme}
+              aria-pressed={theme === 'mono'}
               title="Theme"
             >
-              {monoTheme ? <Palette size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+              {theme === 'mono' ? <Palette size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+            </button>
+            {/* Dark mode toggle — third control */}
+            <button
+              className="lang-toggle"
+              id="dark-mode-toggle"
+              onClick={toggleDark}
+              aria-label={DARK_TOGGLE_LABEL[lang]}
+              aria-pressed={theme === 'dark'}
+              title={DARK_TOGGLE_LABEL[lang]}
+            >
+              {theme === 'dark'
+                ? <Sun size={16} aria-hidden="true" />
+                : <Moon size={16} aria-hidden="true" />}
             </button>
             <button
               className="lang-toggle"
