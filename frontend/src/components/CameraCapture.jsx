@@ -80,7 +80,53 @@ const T = {
     mr: 'नमुना प्रतिमा लोड होऊ शकली नाही.',
   },
   previewAlt: { en: 'Crop leaf preview', hi: 'फसल पत्ती प्रीव्यू', mr: 'पीक पान प्रीव्ह्यू' },
+  // Rotating one-line status while a scan is in flight. Indeterminate by
+  // design — no invented percentage, just what is happening.
+  analyzing: {
+    en: [
+      'Uploading photo…',
+      'Reading the leaf…',
+      'Matching disease patterns…',
+      'Preparing your advice…',
+    ],
+    hi: [
+      'फोटो अपलोड हो रही है…',
+      'पत्ती पढ़ी जा रही है…',
+      'रोग के पैटर्न मिलाए जा रहे हैं…',
+      'आपकी सलाह तैयार हो रही है…',
+    ],
+    mr: [
+      'फोटो अपलोड होत आहे…',
+      'पान वाचले जात आहे…',
+      'रोगाचे नमुने जुळवले जात आहेत…',
+      'तुमचा सल्ला तयार होत आहे…',
+    ],
+  },
 };
+
+/**
+ * Rotating one-line status while a scan is in flight. Mounted only during
+ * analysis, so its step counter resets naturally on every new scan — and the
+ * effect only owns an interval, never a synchronous state write.
+ */
+function AnalyzeStatus({ lang }) {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(
+      () => setStep((current) => (current + 1) % T.analyzing.en.length),
+      2500
+    );
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <p className="analyze-status" role="status">
+      <span className="spinner" aria-hidden="true" />
+      {(T.analyzing[lang] || T.analyzing.en)[step]}
+    </p>
+  );
+}
 
 function SproutSvg() {
   return (
@@ -127,6 +173,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
+
 
   const startCamera = async () => {
     try {
@@ -217,8 +264,6 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
         <div className="corner bottom-left"></div>
         <div className="corner bottom-right"></div>
 
-        {isLoading && <div className="scan-line"></div>}
-
         {mode === 'idle' && (
           <div className="capture-placeholder">
             <SproutSvg />
@@ -238,9 +283,17 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
         )}
 
         {mode === 'preview' && preview && (
+          <img src={preview} alt={t('previewAlt')} className={`preview-image ${isLoading ? 'blur-sm' : ''}`} />
+        )}
+
+        {/* Analyzing overlay: dark scrim, laser sweep, pulsing brackets (the
+            .corner elements) and a rotating status line above the button's
+            existing spinner. Rendered last so it paints over the image. */}
+        {isLoading && (
           <>
-            <img src={preview} alt={t('previewAlt')} className={`preview-image ${isLoading ? 'blur-sm' : ''}`} />
-            {isLoading && <div className="skeleton-overlay skeleton" />}
+            <div className="analyze-scrim" aria-hidden="true" />
+            <div className="scan-line" aria-hidden="true" />
+            <AnalyzeStatus lang={lang} />
           </>
         )}
       </div>

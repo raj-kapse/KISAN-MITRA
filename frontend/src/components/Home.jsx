@@ -1,21 +1,28 @@
 /**
  * Home — the dashboard farmers land on after entering
  *
- * - Greeting + localized date
- * - Weather mini-card (fetched only after entering home; failures never
- *   block the page — a compact retry chip instead)
- * - Quick actions: Scan / History / Ask AI (callback into App) / Advisory
- * - Recent scans (3) with skeletons; tapping opens a read-only result view
- * - Empty state: big "Scan your crop" hero CTA
+ * - Hero: greeting, localized date, and a chip for the resolved city, with a
+ *   staggered entrance (greeting → meta → sections, 0.1s apart)
+ * - One primary CTA ("Scan a Crop") with a one-line trilingual helper
+ * - Weather mini-card (failures never block the page — retry chip + city
+ *   search fallback instead)
+ * - Weather advisory highlight, severity-coloured, from the shared tips module
+ * - Secondary quick actions (History / Ask AI / Advisory)
+ * - Recent scans: severity-coloured icon, per-language disease name, mini
+ *   confidence ring, localized relative time; skeletons while loading
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ScanLine, History, MessageCircle, CloudSun,
+  ScanLine, History, MessageCircle, CloudSun, MapPin,
   Sprout, AlertTriangle, ArrowRight,
 } from 'lucide-react';
 import { getWeather, geocodeCity } from '../api';
 import { WeatherIcon } from '../utils/weatherIcons';
+import { getAdvisoryHighlight } from '../utils/advisory';
+import {
+  pickDiseaseName, relativeTime, confidenceTier, isHealthyScan, severityTone,
+} from '../utils/diagnosis';
 import './Home.css';
 
 const T = {
@@ -26,8 +33,8 @@ const T = {
   weatherCityPh: { en: 'e.g. Nashik', hi: 'जैसे: नाशिक', mr: 'उदा. नाशिक' },
   weatherCityGo: { en: 'Go', hi: 'खोजें', mr: 'शोधा' },
   weatherCityFail: { en: 'City not found — try another.', hi: 'शहर नहीं मिला — दूसरा आज़माएँ।', mr: 'शहर सापडले नाही — दुसरे वापरा.' },
+  advisoryLabel: { en: 'Weather advisory', hi: 'मौसम सलाह', mr: 'हवामान सल्ला' },
   quickTitle: { en: 'What do you want to do?', hi: 'आप क्या करना चाहते हैं?', mr: 'तुम्ही काय करू इच्छिता?' },
-  scan: { en: 'Scan Crop', hi: 'फसल स्कैन', mr: 'पीक स्कॅन' },
   history: { en: 'History', hi: 'इतिहास', mr: 'इतिहास' },
   askAi: { en: 'Ask AI', hi: 'AI से पूछें', mr: 'AI ला विचारा' },
   advisory: { en: 'Advisory', hi: 'सलाह', mr: 'सल्ला' },
@@ -35,13 +42,42 @@ const T = {
   seeAll: { en: 'See all', hi: 'सभी देखें', mr: 'सर्व पहा' },
   emptyTitle: { en: 'No scans yet', hi: 'अभी कोई स्कैन नहीं', mr: 'अजून स्कॅन नाही' },
   emptyDesc: {
-    en: 'Scan a leaf and Kisan Mitra will identify the disease and treatment.',
-    hi: 'पत्ती स्कैन करें — किसान मित्र रोग और उपचार बताएगा।',
-    mr: 'पान स्कॅन करा — शेतकरी मित्र रोग आणि उपचार सांगेल.',
+    en: 'Tap "Scan a Crop" to begin.',
+    hi: 'शुरू करने के लिए "फसल स्कैन करें" दबाएँ।',
+    mr: 'सुरू करण्यासाठी "पीक स्कॅन करा" दाबा.',
   },
-  scanCta: { en: 'Scan your crop', hi: 'अपनी फसल स्कैन करें', mr: 'तुमचे पीक स्कॅन करा' },
+  scanCta: { en: 'Scan a Crop', hi: 'फसल स्कैन करें', mr: 'पीक स्कॅन करा' },
+  scanHelper: {
+    en: 'Photograph a leaf — get a diagnosis in seconds.',
+    hi: 'पत्ती की फोटो लें — सेकंडों में निदान पाएँ।',
+    mr: 'पानाचा फोटो घ्या — सेकंदांत निदान मिळवा.',
+  },
   healthy: { en: 'Healthy', hi: 'स्वस्थ', mr: 'निरोगी' },
+  unknown: { en: 'Unknown', hi: 'अज्ञात', mr: 'अज्ञात' },
 };
+
+/** Mini confidence ring for a history row. */
+function RecentRing({ percent, tier }) {
+  const RADIUS = 12;
+  const CIRC = 2 * Math.PI * RADIUS;
+  const offset = CIRC * (1 - Math.min(Math.max(percent, 0), 100) / 100);
+  return (
+    <span className={`home-ring home-ring-${tier}`} aria-label={`${percent}%`}>
+      <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+        <circle className="home-ring-track" cx="16" cy="16" r={RADIUS} fill="none" strokeWidth="3.5" />
+        <circle
+          className="home-ring-fill"
+          cx="16" cy="16" r={RADIUS} fill="none" strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={CIRC}
+          strokeDashoffset={offset}
+          transform="rotate(-90 16 16)"
+        />
+        <text className="home-ring-num" x="16" y="20" textAnchor="middle">{percent}</text>
+      </svg>
+    </span>
+  );
+}
 
 function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onAskAi, onOpenScan }) {
   const t = (key) => T[key][lang] || T[key].en;
@@ -77,10 +113,10 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       loadWeather();
     }, 0);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [loadWeather]);
 
   // City fallback — when geolocation is denied/unavailable the farmer types
@@ -114,15 +150,41 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
   });
 
   const hasScans = recentScans.length > 0;
+  const city = weatherState === 'ok' ? weather?.current?.city : null;
+  const advisory = weatherState === 'ok'
+    ? getAdvisoryHighlight(weather?.current, weather?.forecast, lang)
+    : null;
+
+  const advisoryIcon = advisory?.tone === 'severe'
+    ? <AlertTriangle size={18} />
+    : advisory?.tone === 'healthy' ? <Sprout size={18} /> : <CloudSun size={18} />;
 
   return (
-    <div className="home animate-slide-up">
-      <header className="home-greeting">
-        <h2>
+    <div className="home">
+      {/* Hero — greeting, date, resolved city */}
+      <header className="home-hero">
+        <h2 className="home-hero-greeting">
           {t('greeting')}, {profile?.name?.split(' ')[0] || t('farmer')}
         </h2>
-        <p>{dateStr}</p>
+        <div className="home-hero-meta">
+          <p className="home-hero-date">{dateStr}</p>
+          {city && (
+            <span className="home-city-chip">
+              <MapPin size={13} aria-hidden="true" />
+              {city}
+            </span>
+          )}
+        </div>
       </header>
+
+      {/* Primary action — one obvious next step */}
+      <section className="home-hero-cta-block">
+        <button type="button" className="home-hero-cta" onClick={() => onNavigate('scan')}>
+          <ScanLine size={22} aria-hidden="true" />
+          {t('scanCta')}
+        </button>
+        <p className="home-hero-helper">{t('scanHelper')}</p>
+      </section>
 
       {/* Weather mini-card — failure never blocks the page */}
       <section className="home-weather glass-panel" aria-label={t('weatherTitle')}>
@@ -177,24 +239,28 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
         )}
       </section>
 
-      {/* Quick actions 2×2 */}
+      {/* Advisory highlight — appears only once the weather resolves */}
+      {advisory && (
+        <section className={`home-advisory tone-${advisory.tone}`} aria-label={t('advisoryLabel')}>
+          <span className="home-advisory-icon" aria-hidden="true">{advisoryIcon}</span>
+          <p className="home-advisory-text">{advisory.text}</p>
+        </section>
+      )}
+
+      {/* Secondary actions — the hero CTA already covers scanning */}
       <section aria-label={t('quickTitle')}>
         <h3 className="home-section-title">{t('quickTitle')}</h3>
         <div className="home-quick-grid">
-          <button type="button" className="home-quick" onClick={() => onNavigate('scan')}>
-            <ScanLine size={24} aria-hidden="true" />
-            <span>{t('scan')}</span>
-          </button>
           <button type="button" className="home-quick" onClick={() => onNavigate('history')}>
-            <History size={24} aria-hidden="true" />
+            <History size={22} aria-hidden="true" />
             <span>{t('history')}</span>
           </button>
           <button type="button" className="home-quick" onClick={onAskAi}>
-            <MessageCircle size={24} aria-hidden="true" />
+            <MessageCircle size={22} aria-hidden="true" />
             <span>{t('askAi')}</span>
           </button>
           <button type="button" className="home-quick" onClick={() => onNavigate('advisory')}>
-            <Sprout size={24} aria-hidden="true" />
+            <Sprout size={22} aria-hidden="true" />
             <span>{t('advisory')}</span>
           </button>
         </div>
@@ -229,7 +295,12 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
           <ul className="home-recent-list">
             {recentScans.map((scan) => {
               const d = scan.diagnosis || {};
-              const isHealthy = (d.disease_name || '').toLowerCase() === 'healthy';
+              const healthy = isHealthyScan(d);
+              const confPercent = Math.round((d.confidence || 0) * 100);
+              const name = pickDiseaseName(d, lang);
+              const tone = severityTone(d);
+              const when = relativeTime(scan.createdAt || scan.timestamp, locale);
+
               return (
                 <li key={scan.id}>
                   <button
@@ -237,19 +308,19 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
                     className="home-recent-item glass-panel"
                     onClick={() => onOpenScan(scan)}
                   >
-                    <span
-                      className={`home-recent-icon ${isHealthy ? 'healthy' : 'diseased'}`}
-                      aria-hidden="true"
-                    >
-                      {isHealthy ? <Sprout size={20} /> : <AlertTriangle size={20} />}
+                    <span className={`home-recent-icon tone-${tone}`} aria-hidden="true">
+                      {healthy ? <Sprout size={20} /> : <AlertTriangle size={20} />}
                     </span>
                     <span className="home-recent-text">
                       <span className="home-recent-name">
-                        {isHealthy ? t('healthy') : (d.disease_name || '—')}
+                        {healthy ? t('healthy') : (name || t('unknown'))}
                       </span>
-                      <span className="home-recent-crop">{d.crop_type || ''}</span>
+                      <span className="home-recent-meta">
+                        {d.crop_type && <span className="home-recent-crop">{d.crop_type}</span>}
+                        {when && <span className="home-recent-when">{when}</span>}
+                      </span>
                     </span>
-                    <ArrowRight size={16} aria-hidden="true" />
+                    <RecentRing percent={confPercent} tier={confidenceTier(confPercent)} />
                   </button>
                 </li>
               );

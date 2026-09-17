@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CloudSun, MapPin, Sparkles, Info, Search, Droplets, Thermometer, Wind } from 'lucide-react';
 import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
 import { WeatherIcon } from '../utils/weatherIcons';
+import { getCropAdvice } from '../utils/advisory';
 import './WeatherAdvisory.css';
 
 function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
@@ -303,45 +304,6 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
       {manualError && weather && <small className="manual-error">{manualError}</small>}
     </div>
   );
-}
-
-/**
- * Rule-based tips when no AI advisory is available (trilingual M4).
- * Each rule holds the same tip in en/hi/mr.
- */
-function getCropAdvice(current, forecast, lang = 'en') {
-  const idx = lang === 'hi' ? 1 : lang === 'mr' ? 2 : 0;
-  const rules = [
-    { when: c => c.humidity > 80, tip: [
-      'High humidity — watch for fungal outbreaks; consider a preventive fungicide spray.',
-      'अधिक आर्द्रता — फंगल रोग का खतरा; बचाव के लिए फफूंदनाशक छिड़काव पर विचार करें।',
-      'जास्त आर्द्रता — बुरशीचा धोका; प्रतिबंधात्मक बुरशीनाशक फवारणीचा विचार करा.',
-    ]},
-    { when: c => c.wind_speed && c.wind_speed > 10, tip: [
-      'Strong winds — avoid pesticide spraying today; drift will reduce effectiveness.',
-      'तेज़ हवा — आज कीटकनाशक छिड़काव न करें; दवा बिखर जाएगी।',
-      'मोठा वारा — आज कीटकनाशक फवारणी करू नका; औषध वाहून जाईल.',
-    ]},
-    { when: c => c.temp > 35, tip: [
-      'Heat stress likely — irrigate in the early morning or evening, not midday.',
-      'गर्मी का खतरा — पानी सुबह या शाम को दें, दोपहर में नहीं।',
-      'उष्णतेचा ताण — पाणी सकाळी किंवा संध्याकाळी द्या, दुपारी नाही.',
-    ]},
-    { when: (c, f) => (f || []).slice(0, 3).some(d => d.rain_probability >= 60), tip: [
-      'Rain likely within 3 days — delay fertilizer/pesticide application so it is not washed away.',
-      '3 दिन में बारिश संभव — खाद/दवा का छिड़काव टालें, बह जाएगा।',
-      '3 दिवसांत पाऊस शक्य — खत/औषध फवारणी टाळा, वाहून जाईल.',
-    ]},
-  ];
-  const tips = rules.filter(r => r.when(current, forecast)).map(r => r.tip[idx]);
-  if (tips.length === 0) {
-    return [[
-      'Conditions are stable — a good window for field work and spraying.',
-      'मौसम स्थिर है — खेत के काम और छिड़काव के लिए अच्छा समय।',
-      'हवामान स्थिर आहे — शेतकाम व फवारणीसाठी चांगली वेळ.',
-    ][idx]];
-  }
-  return tips;
 }
 
 export default WeatherAdvisory;

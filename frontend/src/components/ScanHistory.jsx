@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Sprout, AlertTriangle, RefreshCw } from 'lucide-react';
 import { getHistory } from '../api';
+import { pickDiseaseName, relativeTime, confidenceTier } from '../utils/diagnosis';
 import './ScanHistory.css';
 
 const T = {
@@ -25,29 +26,6 @@ const T = {
   mine: { en: 'Mine', hi: 'मेरे', mr: 'माझे' },
   device: { en: 'This device', hi: 'यह डिवाइस', mr: 'हे डिव्हाइस' },
 };
-
-/** Localized relative time — "3 hr ago" / "3 घंटे पहले" / "3 तासांपूर्वी" */
-function relativeTime(iso, locale) {
-  if (!iso) return '';
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const diffSec = Math.round((then - Date.now()) / 1000);
-
-  const units = [
-    ['year', 365 * 24 * 3600],
-    ['month', 30 * 24 * 3600],
-    ['day', 24 * 3600],
-    ['hour', 3600],
-    ['minute', 60],
-  ];
-  for (const [unit, secs] of units) {
-    if (Math.abs(diffSec) >= secs) {
-      return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
-        .format(Math.round(diffSec / secs), unit);
-    }
-  }
-  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(diffSec, 'second');
-}
 
 /** Mini SVG confidence ring (compact, no label). */
 function MiniRing({ percent, tier }) {
@@ -157,7 +135,7 @@ function ScanHistory({ lang = 'en', onBack, profile = null, onOpenScan }) {
             const confPercent = Math.round((d.confidence || 0) * 100);
             const name = pickDiseaseName(d, lang);
             const isHealthy = d.disease_name?.toLowerCase() === 'healthy';
-            const tier = confPercent >= 80 ? 'high' : confPercent >= 50 ? 'medium' : 'low';
+            const tier = confidenceTier(confPercent);
             const when = relativeTime(scan.createdAt || scan.timestamp, locale);
 
             return (
@@ -186,14 +164,6 @@ function ScanHistory({ lang = 'en', onBack, profile = null, onOpenScan }) {
       )}
     </div>
   );
-}
-
-// BUG 7: per-language name picker — Marathi falls back mr → hi → en,
-// Hindi falls back hi → en, English uses the base name.
-function pickDiseaseName(d, lang) {
-  if (lang === 'hi') return d.disease_name_hi || d.disease_name;
-  if (lang === 'mr') return d.disease_name_mr || d.disease_name_hi || d.disease_name;
-  return d.disease_name;
 }
 
 function SproutSvgLarge() {
