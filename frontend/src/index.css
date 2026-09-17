@@ -112,7 +112,10 @@
   --skeleton-shimmer: #E3E8E1;
 
   /* Bottom navigation metrics */
-  --nav-height: 4.25rem;
+  /* 5rem/80px: a bottom app bar tall enough to host the floating centre
+   * button — 28px of its 56px height overlaps the bar's top edge, leaving
+   * 52px below for a 48px tab plus breathing room. */
+  --nav-height: 5rem;
 
   /* Deprecated aliases kept so any unreached CSS still renders sanely */
   --shadow-soft: var(--shadow-sm);

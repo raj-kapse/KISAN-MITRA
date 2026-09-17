@@ -107,29 +107,33 @@
   padding-bottom: calc(var(--nav-height) + 3rem);
 }
 
-/* --- Bottom navigation --- */
+/* --- Bottom navigation ---
+ * Three tabs plus a floating centre action button. The tabs are pinned low in
+ * the bar so the button's lower half — the part that overlaps the bar's top
+ * edge — floats in clear space above their icons. */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 150;
-  display: grid;
-  grid-template-columns: 1fr 1fr 84px 1fr 1fr;
-  align-items: center;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
   height: var(--nav-height);
   border-radius: 0;
   border-left: none;
   border-right: none;
   border-bottom: none;
-  padding: 0 var(--space-sm);
+  padding: 0 var(--space-sm) calc(var(--space-xs) + env(safe-area-inset-bottom, 0px));
 }
 
 .nav-item {
+  flex: 1; /* equal thirds — even spacing with the button centred over the middle */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* sits low, clear of the floating button */
   gap: 2px;
   min-height: 48px;
   border: none;
@@ -137,6 +141,7 @@
   color: var(--color-text-light);
   font-family: inherit;
   font-size: var(--font-size-xs);
+  line-height: 1.2;
   font-weight: var(--weight-medium);
   cursor: pointer;
   transition: color 0.15s ease;
@@ -145,19 +150,18 @@
 .nav-item.active { color: var(--color-primary); }
 .nav-item.active svg { transform: scale(1.08); }
 
-/* Empty grid cell — keeps the raised scan button on the centre line */
-.nav-ghost { display: block; }
-
-/* Raised center scan button */
+/* Floating centre action button — half of it rides above the bar's top edge */
 .nav-scan {
-  justify-self: center;
-  align-self: flex-start;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 28px); /* 28px of its 56px height overlaps the bar */
+  transform: translateX(-50%);
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 56px;
   height: 56px;
-  margin-top: -1.5rem;
   border: 3px solid var(--color-bg);
   border-radius: var(--radius-full);
   background: var(--color-accent-cta);
@@ -167,8 +171,9 @@
   transition: transform 0.12s ease, background 0.15s ease;
 }
 
-.nav-scan:hover { background: var(--color-accent-cta-press); transform: translateY(-2px); }
-.nav-scan:active { transform: scale(0.95); }
+/* every state re-declares translateX(-50%) so the button never drifts off-centre */
+.nav-scan:hover { background: var(--color-accent-cta-press); transform: translateX(-50%) translateY(-2px); }
+.nav-scan:active { transform: translateX(-50%) scale(0.95); }
 
 /* --- Scan view buttons (legacy class names, token styling) --- */
 .diagnose-btn {

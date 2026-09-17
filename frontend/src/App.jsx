@@ -483,10 +483,6 @@ function App() {
           <ScanLine size={26} aria-hidden="true" />
         </button>
 
-        {/* Empty track that holds the centre line for the raised scan button,
-            so Home/History and Profile stay balanced around it. */}
-        <span className="nav-ghost" aria-hidden="true" />
-
         <button
           className="nav-item"
           onClick={() => (profile ? setSignOutOpen(true) : setProfileOpen(true))}
