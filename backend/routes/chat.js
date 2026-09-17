@@ -23,7 +23,14 @@ router.post('/chat', aiRateLimit, async (req, res) => {
     res.json({ success: true, reply, provider });
   } catch (error) {
     console.error('Chat Route Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to chat with AI' });
+    // 503 = provider/quota problem (retryable), 500 = unexpected bug
+    const status = error.code === 'PROVIDER_TIMEOUT' || /timed out|429|503/i.test(error.message) ? 503 : 500;
+    res.status(status).json({
+      success: false,
+      error: status === 503
+        ? 'AI service is busy right now — please try again in a few seconds.'
+        : 'Failed to chat with AI',
+    });
   }
 });
 

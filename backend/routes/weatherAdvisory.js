@@ -35,7 +35,14 @@ Provide exactly 2-3 sentences of critical farming advice combining the disease a
     res.json({ success: true, advice, provider });
   } catch (error) {
     console.error('Weather Advisory Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to generate combined AI advisory' });
+    // 503 = provider/quota problem (retryable), 500 = unexpected bug
+    const status = error.code === 'PROVIDER_TIMEOUT' || /timed out|429|503/i.test(error.message || '') ? 503 : 500;
+    res.status(status).json({
+      success: false,
+      error: status === 503
+        ? 'AI service is busy right now — please try again in a few seconds.'
+        : 'Failed to generate combined AI advisory',
+    });
   }
 });
 

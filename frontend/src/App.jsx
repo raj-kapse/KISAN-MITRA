@@ -8,7 +8,7 @@
  * 4. Voice read-aloud, scan history, language toggle
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
@@ -32,6 +32,18 @@ function App() {
   const [lang, setLang] = useState('en'); // 'en' or 'hi'
   const [view, setView] = useState('scan'); // 'scan' or 'history'
 
+  // Increments on every new diagnose request; responses from superseded
+  // requests are discarded so a slow old scan can't overwrite fresh state.
+  const diagnoseRequestIdRef = useRef(0);
+
+  // Free the previous blob URL whenever a new one is created or the app
+  // resets — object URLs pin the image bytes in memory until revoked.
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
+
   /** Handle image selection from CameraCapture component. */
   const handleImageSelected = useCallback((file) => {
     if (file) {
@@ -53,8 +65,12 @@ function App() {
     setError(null);
     setDiagnosis(null);
 
+    // Guard against stale responses: only the latest request may write state
+    const requestId = ++diagnoseRequestIdRef.current;
+    const isCurrent = () => diagnoseRequestIdRef.current === requestId;
     try {
       const result = await diagnoseCrop(selectedImage);
+      if (!isCurrent()) return; // a newer scan started meanwhile
       if (result.success && result.diagnosis) {
         setDiagnosis(result.diagnosis);
         // Fire-and-forget save to history (don't block the UI)
@@ -65,10 +81,11 @@ function App() {
         throw new Error(result.error || 'Unexpected response from server');
       }
     } catch (err) {
+      if (!isCurrent()) return; // stale — ignore
       console.error('Diagnosis error:', err);
       setError(err.message || 'Failed to analyze image. Please try again.');
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
 

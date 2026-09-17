@@ -14,6 +14,21 @@ const { GoogleGenAI } = require('@google/genai');
 
 const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
 const GEMINI_TEXT_MODEL = 'gemini-3.6-flash';
+const PROVIDER_TIMEOUT_MS = Number(process.env.PROVIDER_TIMEOUT_MS) || 15000;
+
+/** Reject if a provider call exceeds `ms` — chat/advisory must not hang. */
+function withTimeout(promise, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        const err = new Error(`${label} timed out after ${Math.round(PROVIDER_TIMEOUT_MS / 1000)}s`);
+        err.code = 'PROVIDER_TIMEOUT';
+        reject(err);
+      }, PROVIDER_TIMEOUT_MS);
+    }),
+  ]);
+}
 
 /** Groq via the OpenAI-compatible chat-completions endpoint. */
 async function groqChat(messages, systemContext) {
@@ -95,7 +110,7 @@ async function chatComplete(messages, systemContext) {
   let lastErr;
   for (const p of providers) {
     try {
-      const text = await p.fn(messages, systemContext);
+      const text = await withTimeout(p.fn(messages, systemContext), p.name);
       return { text, provider: p.name };
     } catch (err) {
       console.warn(`⚠️ textProvider [${p.name}] failed: ${err.message}`);
