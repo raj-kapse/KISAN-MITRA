@@ -97,7 +97,7 @@ app.listen(PORT, () => {
   console.log(`\n🌾 Kisan Mitra backend running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`   Trust Proxy: ${process.env.TRUST_PROXY === '1' ? 'enabled (1 hop)' : 'disabled'}`);
+  console.log(`   Trust Proxy: ${process.env.TRUST_PROXY ? process.env.TRUST_PROXY + ' (from env)' : '⚠️ NOT SET — rate limits will apply per-proxy-IP in production'}`);
   
   // Log API key status (never log the actual keys)
   console.log(`   Groq API Key: ${process.env.GROQ_API_KEY ? '✅ Set' : '❌ Missing'}`);

@@ -62,7 +62,7 @@ Guidelines:
 6. Format: Output pure valid JSON only.`;
 
 /**
- * Diagnose crop disease from an image buffer using Gemini 2.5 Flash.
+ * Diagnose crop disease from an image buffer using the Gemini 3.x Flash family.
  *
  * @param {Buffer} imageBuffer - Raw image buffer from multer memory storage
  * @param {string} mimeType - MIME type of the uploaded image (e.g. 'image/jpeg', 'image/png')

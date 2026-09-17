@@ -83,7 +83,7 @@ function LandingLogo() {
   );
 }
 
-function LandingPage({ lang, onToggleLang, onEnter, profile }) {
+function LandingPage({ lang, onToggleLang, onEnter, profile, onSignOutRequest }) {
   const t = (key) => TEXT[key][lang] || TEXT[key].en;
 
   return (
@@ -106,9 +106,6 @@ function LandingPage({ lang, onToggleLang, onEnter, profile }) {
         {profile && (
           <p className="landing-greeting">
             {t('greeting')}, {profile.name.split(' ')[0]}
-            <button type="button" className="landing-greeting-action" onClick={onEnter}>
-              {/* placeholder — real sign-out lives in the header/profile menu */}
-            </button>
           </p>
         )}
 
@@ -137,7 +134,13 @@ function LandingPage({ lang, onToggleLang, onEnter, profile }) {
         {profile ? (
           <p className="landing-guest-note">
             {t('greeting')}, {profile.name} ·{' '}
-            <span className="landing-guest-hint">{t('notYou')}</span>
+            <button
+              type="button"
+              className="landing-guest-hint landing-signout-link"
+              onClick={onSignOutRequest}
+            >
+              {t('notYou')}
+            </button>
           </p>
         ) : (
           <button type="button" className="landing-guest-btn" onClick={onEnter}>

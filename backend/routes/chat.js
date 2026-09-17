@@ -15,8 +15,18 @@ router.post('/chat', chatRateLimit, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid messages format' });
     }
 
+    // BUG 8: validate + bound the payload before it reaches the AI provider
+    const cleanMessages = messages
+      .filter((m) => m && typeof m.content === 'string' && ['user', 'model', 'assistant'].includes(m.role))
+      .slice(-20)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+
+    if (cleanMessages.length === 0) {
+      return res.status(400).json({ success: false, error: 'Chat messages must be {role, content} objects (max 20 turns, 2000 chars each).' });
+    }
+
     const { text: reply, provider } = await chatComplete(
-      messages,
+      cleanMessages,
       context || 'You are Kisan Mitra, a helpful AI agricultural assistant for Indian farmers. Reply in the language the farmer uses (English or Hindi).'
     );
     

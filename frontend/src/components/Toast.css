@@ -33,6 +33,11 @@
 .toast-warning svg { color: #E8B45A; }
 .toast-info svg { color: #7FB3DC; }
 
+/* Mono theme — status read through weight/shape, not hue */
+[data-theme='mono'] .toast-success svg { color: #555555; }
+[data-theme='mono'] .toast-warning svg { color: #1A1A1A; }
+[data-theme='mono'] .toast-info svg { color: #555555; }
+
 @keyframes toastIn {
   from { transform: translateY(10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }

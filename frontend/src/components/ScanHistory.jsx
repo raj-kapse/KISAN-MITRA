@@ -151,7 +151,7 @@ function ScanHistory({ lang = 'en', onBack, profile = null, onOpenScan }) {
           {scans.map((scan) => {
             const d = scan.diagnosis || {};
             const confPercent = Math.round((d.confidence || 0) * 100);
-            const name = isLocalized(lang) ? (d.disease_name_hi || d.disease_name_mr || d.disease_name) : d.disease_name;
+            const name = pickDiseaseName(d, lang);
             const isHealthy = d.disease_name?.toLowerCase() === 'healthy';
             const tier = confPercent >= 80 ? 'high' : confPercent >= 50 ? 'medium' : 'low';
             const when = relativeTime(scan.createdAt || scan.timestamp, locale);
@@ -184,8 +184,12 @@ function ScanHistory({ lang = 'en', onBack, profile = null, onOpenScan }) {
   );
 }
 
-function isLocalized(lang) {
-  return lang === 'hi';
+// BUG 7: per-language name picker — Marathi falls back mr → hi → en,
+// Hindi falls back hi → en, English uses the base name.
+function pickDiseaseName(d, lang) {
+  if (lang === 'hi') return d.disease_name_hi || d.disease_name;
+  if (lang === 'mr') return d.disease_name_mr || d.disease_name_hi || d.disease_name;
+  return d.disease_name;
 }
 
 function SproutSvgLarge() {

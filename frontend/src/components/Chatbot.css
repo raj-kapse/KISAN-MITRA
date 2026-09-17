@@ -101,8 +101,10 @@
   width: 7px;
   height: 7px;
   border-radius: var(--radius-full);
-  background: #7CC795;
+  background: #7CC795; /* brand-green tint */
 }
+
+[data-theme='mono'] .online-dot { background: var(--color-primary-soft); }
 
 .close-chat-btn {
   display: inline-flex;

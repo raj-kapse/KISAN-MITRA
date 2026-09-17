@@ -14,12 +14,25 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// Operational 1: a random per-boot secret silently invalidated every login
+// after a restart (profiles.json persists → farmers locked out with 401).
+// When PROFILE_AUTH_SECRET is unset, derive a STABLE secret from the profiles
+// file path + FIREBASE_PROJECT_ID so sessions survive reboots. Never printed.
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 
+const PROFILE_AUTH_SECRET = process.env.PROFILE_AUTH_SECRET ||
+  (() => {
+    console.warn('⚠️  PROFILE_AUTH_SECRET is not set — deriving a stable fallback secret.');
+    console.warn('   Set PROFILE_AUTH_SECRET explicitly in production (backend/.env).');
+    return crypto
+      .createHash('sha256')
+      .update(`${PROFILES_FILE}|${process.env.FIREBASE_PROJECT_ID || ''}`)
+      .digest('hex');
+  })();
+
 // Bounded demo-tier store
 const MAX_PROFILES = 500;
-const PROFILE_AUTH_SECRET = process.env.PROFILE_AUTH_SECRET || crypto.randomBytes(32).toString('hex');
 
 /** Normalise an Indian phone number to its last 10 digits for matching. */
 function normalisePhone(raw) {

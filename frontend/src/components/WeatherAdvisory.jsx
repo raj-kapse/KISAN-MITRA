@@ -87,6 +87,18 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
     }
   }, [manualCity, onLocationResolved]);
 
+  // Auto-fetch on mount and when a manual city is picked. Without this the
+  // advisory view rendered an empty panel forever on first open — the only
+  // trigger was the Retry button, which itself only renders once an error
+  // exists. Keyed so a completed fetch never re-triggers the effect.
+  const fetchedKeyRef = useRef(null);
+  useEffect(() => {
+    const key = manualCity ? `${manualCity.lat},${manualCity.lon}` : 'geo';
+    if (fetchedKeyRef.current === key) return;
+    fetchedKeyRef.current = key;
+    fetchWeatherAndAdvice();
+  }, [manualCity, fetchWeatherAndAdvice]);
+
   // AI advisory — a SEPARATE flow. An advisory failure (429/quota) must
   // never replace working weather data; the UI falls back to rule-based
   // tips instead (C2). adviceKey dedupes: the advisory refetches only when
@@ -189,7 +201,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Determine dynamic background class based on weather description
-  const desc = current.description.toLowerCase();
+  const desc = (current.description || '').toLowerCase();
   let weatherTheme = 'weather-theme-default';
   if (desc.includes('rain') || desc.includes('drizzle')) weatherTheme = 'weather-theme-rain';
   else if (desc.includes('cloud')) weatherTheme = 'weather-theme-cloudy';

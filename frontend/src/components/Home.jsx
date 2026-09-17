@@ -14,7 +14,7 @@ import {
   ScanLine, History, MessageCircle, CloudSun, Sun, CloudRain, CloudFog,
   Sprout, AlertTriangle, ArrowRight,
 } from 'lucide-react';
-import { getWeather, getHistory } from '../api';
+import { getWeather, getHistory, geocodeCity } from '../api';
 import './Home.css';
 
 const T = {
@@ -22,6 +22,9 @@ const T = {
   farmer: { en: 'Farmer', hi: 'किसान', mr: 'शेतकरी' },
   weatherTitle: { en: 'Weather', hi: 'मौसम', mr: 'हवामान' },
   weatherRetry: { en: 'Retry', hi: 'पुनः प्रयास', mr: 'पुन्हा प्रयत्न' },
+  weatherCityPh: { en: 'e.g. Nashik', hi: 'जैसे: नाशिक', mr: 'उदा. नाशिक' },
+  weatherCityGo: { en: 'Go', hi: 'खोजें', mr: 'शोधा' },
+  weatherCityFail: { en: 'City not found — try another.', hi: 'शहर नहीं मिला — दूसरा आज़माएँ।', mr: 'शहर सापडले नाही — दुसरे वापरा.' },
   quickTitle: { en: 'What do you want to do?', hi: 'आप क्या करना चाहते हैं?', mr: 'तुम्ही काय करू इच्छिता?' },
   scan: { en: 'Scan Crop', hi: 'फसल स्कैन', mr: 'पीक स्कॅन' },
   history: { en: 'History', hi: 'इतिहास', mr: 'इतिहास' },
@@ -54,6 +57,9 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
 
   const [weather, setWeather] = useState(null);
   const [weatherState, setWeatherState] = useState('loading'); // loading | ok | error
+  const [cityQuery, setCityQuery] = useState('');
+  const [cityLoading, setCityLoading] = useState(false);
+  const [cityError, setCityError] = useState(null);
 
   const loadWeather = useCallback(async () => {
     if (!navigator.geolocation) {
@@ -81,6 +87,32 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
   useEffect(() => {
     loadWeather();
   }, [loadWeather]);
+
+  // City fallback — when geolocation is denied/unavailable the farmer types
+  // a city name instead, so weather is still reachable (same path as the
+  // full advisory view).
+  const handleCitySearch = async (e) => {
+    e.preventDefault();
+    const q = cityQuery.trim();
+    if (!q || cityLoading) return;
+    setCityLoading(true);
+    setCityError(null);
+    try {
+      const loc = await geocodeCity(q);
+      const result = await getWeather(loc.lat, loc.lon);
+      if (result.success) {
+        setWeather(result);
+        setWeatherState('ok');
+        setCityQuery('');
+      } else {
+        setCityError(t('weatherCityFail'));
+      }
+    } catch {
+      setCityError(t('weatherCityFail'));
+    } finally {
+      setCityLoading(false);
+    }
+  };
 
   const dateStr = new Date().toLocaleDateString(locale, {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -110,10 +142,25 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
           </div>
         )}
         {weatherState === 'error' && (
-          <button type="button" className="home-weather-retry" onClick={loadWeather}>
-            <CloudSun size={16} aria-hidden="true" />
-            <span>{t('weatherTitle')} · {t('weatherRetry')}</span>
-          </button>
+          <div className="home-weather-error">
+            <button type="button" className="home-weather-retry" onClick={loadWeather}>
+              <CloudSun size={16} aria-hidden="true" />
+              <span>{t('weatherTitle')} · {t('weatherRetry')}</span>
+            </button>
+            <form className="home-weather-city" onSubmit={handleCitySearch}>
+              <input
+                type="text"
+                value={cityQuery}
+                onChange={(e) => setCityQuery(e.target.value)}
+                placeholder={t('weatherCityPh')}
+                aria-label={t('weatherCityGo')}
+              />
+              <button type="submit" disabled={cityLoading || !cityQuery.trim()}>
+                {cityLoading ? '…' : t('weatherCityGo')}
+              </button>
+            </form>
+            {cityError && <small className="home-weather-city-error">{cityError}</small>}
+          </div>
         )}
         {weatherState === 'ok' && weather?.current && (
           <>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, Upload, ImagePlus, FlaskConical, RotateCcw, ScanSearch } from 'lucide-react';
+import { Camera, ImagePlus, FlaskConical, RotateCcw, ScanSearch } from 'lucide-react';
 import { showToast } from './Toast';
 import './CameraCapture.css';
 

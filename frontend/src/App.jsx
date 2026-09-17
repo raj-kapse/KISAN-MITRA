@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { House, History, ScanLine, User, LogOut } from 'lucide-react';
+import { House, History, ScanLine, User, LogOut, Moon, Palette } from 'lucide-react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
@@ -99,6 +99,15 @@ function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+
+  // Black & white theme — persisted per browser, applied via <html data-theme>.
+  const [monoTheme, setMonoTheme] = useState(() => {
+    try { return localStorage.getItem('kisan_mitra_theme') === 'mono'; } catch { return false; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', monoTheme ? 'mono' : 'default');
+    try { localStorage.setItem('kisan_mitra_theme', monoTheme ? 'mono' : 'green'); } catch { /* storage blocked */ }
+  }, [monoTheme]);
 
   const handleSignedIn = (p) => {
     setProfile(p);
@@ -229,6 +238,7 @@ function App() {
           onToggleLang={toggleLang}
           onEnter={handleEnter}
           profile={profile}
+          onSignOutRequest={() => setSignOutOpen(true)}
         />
         {profileOpen && (
           <ProfileModal lang={lang} onClose={() => setProfileOpen(false)} onSignedIn={handleSignedIn} />
@@ -266,6 +276,15 @@ function App() {
                 <LogOut size={16} aria-hidden="true" />
               </button>
             )}
+            <button
+              className="lang-toggle"
+              onClick={() => setMonoTheme(!monoTheme)}
+              aria-label="Toggle black & white theme"
+              aria-pressed={monoTheme}
+              title="Theme"
+            >
+              {monoTheme ? <Palette size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+            </button>
             <button
               className="lang-toggle"
               onClick={toggleLang}

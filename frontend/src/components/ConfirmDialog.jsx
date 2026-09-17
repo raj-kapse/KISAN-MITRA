@@ -3,6 +3,7 @@
  * (sign-out). Centered modal over an overlay; Cancel is the safe default.
  */
 
+import { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import './ConfirmDialog.css';
 
@@ -23,6 +24,15 @@ const T = {
 
 function ConfirmDialog({ lang = 'en', onConfirm, onCancel }) {
   const t = (key) => T[key][lang] || T[key].en;
+
+  // Cosmetic 4: Escape closes the dialog
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onCancel?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
 
   return (
     <div

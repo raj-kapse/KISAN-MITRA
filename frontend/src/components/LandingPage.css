@@ -9,9 +9,9 @@
   background:
     linear-gradient(
       180deg,
-      rgba(22, 48, 31, 0.82),
-      rgba(22, 48, 31, 0.55) 45%,
-      rgba(22, 48, 31, 0.9)
+      var(--color-hero-from),
+      var(--color-hero-mid) 45%,
+      var(--color-hero-to)
     ),
     url('/field-bg.jpg') center 30% / cover no-repeat;
   color: var(--color-text-on-dark);
@@ -130,8 +130,10 @@
   flex-shrink: 0;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.14);
-  color: #F2C14E;
+  color: #F2C14E; /* warm gold accent */
 }
+
+[data-theme='mono'] .landing-feature-icon { color: #FFFFFF; }
 
 .landing-feature-copy {
   display: flex;
@@ -203,14 +205,30 @@
   color: rgba(245, 243, 238, 0.9);
 }
 
-.landing-greeting-action { display: none; }
-
 .landing-guest-note {
   font-size: var(--font-size-sm);
   color: rgba(245, 243, 238, 0.85);
 }
 
-.landing-guest-hint { text-decoration: underline; text-underline-offset: 3px; }
+.landing-guest-hint {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Real link-styled button (BUG 3) */
+.landing-signout-link {
+  border: none;
+  background: transparent;
+  color: rgba(245, 243, 238, 0.85);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  padding: var(--space-xs);
+  min-height: 44px;
+}
+
+.landing-signout-link:hover { color: var(--color-text-on-dark); }
 
 /* --- Footer strip --- */
 .landing-footer {

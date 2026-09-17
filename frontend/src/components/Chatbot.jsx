@@ -19,8 +19,8 @@ async function transcribeAudio(blob) {
   return data.text;
 }
 
-function Chatbot({ diagnosis, lang }) {
-  const [isOpen, setIsOpen] = useState(false);
+function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
+  const [isOpen, setIsOpen] = useState(chatOpen ?? false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,6 +43,11 @@ function Chatbot({ diagnosis, lang }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // BUG 1: App controls open state (Home "Ask AI") — sync when the prop changes
+  useEffect(() => {
+    if (chatOpen !== undefined) setIsOpen(chatOpen);
+  }, [chatOpen]);
 
   // Diagnose-arrival nudge: a single 8px pulse ring on the FAB
   useEffect(() => {
@@ -82,6 +87,7 @@ function Chatbot({ diagnosis, lang }) {
   const toggleChat = () => {
     if (isOpen && voiceState === 'recording') cancelRecording();
     setIsOpen(!isOpen);
+    setChatOpen?.(!isOpen); // keep App's state in sync (BUG 1)
   };
 
   /** Speak a chatbot reply aloud (voice turns only). Uses the server TTS
@@ -174,7 +180,10 @@ function Chatbot({ diagnosis, lang }) {
       }
     } catch (err) {
       console.error(err);
-      setMessages([...newMessages, { role: 'model', content: lang === 'hi' ? 'क्षमा करें, सर्वर से संपर्क नहीं हो पाया।' : 'Sorry, I could not reach the server.' }]);
+      setMessages([...newMessages, { role: 'model', content:
+        lang === 'hi' ? 'क्षमा करें, सर्वर से संपर्क नहीं हो पाया।'
+        : lang === 'mr' ? 'क्षमा करा, सर्व्हरशी संपर्क होऊ शकला नाही.'
+        : 'Sorry, I could not reach the server.' }]);
     } finally {
       setLoading(false);
     }
@@ -190,8 +199,9 @@ function Chatbot({ diagnosis, lang }) {
     if (voiceState !== 'idle' || loading) return;
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      pushSystemNote(lang === 'hi'
-        ? '🎤 इस डिवाइस पर आवाज़ उपलब्ध नहीं है — कृपया टाइप करें।'
+      pushSystemNote(
+        lang === 'hi' ? '🎤 इस डिवाइस पर आवाज़ उपलब्ध नहीं है — कृपया टाइप करें।'
+        : lang === 'mr' ? '🎤 या डिव्हाइसवर आवाज उपलब्ध नाही — कृपया टाइप करा.'
         : '🎤 Voice is not available on this device — please type instead.');
       return;
     }
@@ -230,8 +240,9 @@ function Chatbot({ diagnosis, lang }) {
         if (blob.size < 2000) {
           // < ~2KB is silence/nothing captured
           setVoiceState('idle');
-          pushSystemNote(lang === 'hi'
-            ? '🎤 कुछ सुनाई नहीं दिया — दोबारा बोलें।'
+          pushSystemNote(
+            lang === 'hi' ? '🎤 कुछ सुनाई नहीं दिया — दोबारा बोलें।'
+            : lang === 'mr' ? '🎤 काही ऐकू आले नाही — पुन्हा बोला.'
             : '🎤 Nothing was captured — try again a bit louder.');
           return;
         }
@@ -258,11 +269,11 @@ function Chatbot({ diagnosis, lang }) {
       setVoiceState('idle');
       const denied = err?.name === 'NotAllowedError' || err?.name === 'SecurityError';
       pushSystemNote(denied
-        ? (lang === 'hi'
-          ? '🎤 माइक की अनुमति बंद है — ब्राउज़र सेटिंग में अनुमति दें या टाइप करें।'
+        ? (lang === 'hi' ? '🎤 माइक की अनुमति बंद है — ब्राउज़र सेटिंग में अनुमति दें या टाइप करें।'
+          : lang === 'mr' ? '🎤 माइकची परवानगी बंद आहे — ब्राउझर सेटिंगमध्ये परवानगी द्या किंवा टाइप करा.'
           : '🎤 Microphone permission is off — enable it in browser settings or type instead.')
-        : (lang === 'hi'
-          ? '🎤 माइक नहीं खुल पाया — कृपया टाइप करें।'
+        : (lang === 'hi' ? '🎤 माइक नहीं खुल पाया — कृपया टाइप करें।'
+          : lang === 'mr' ? '🎤 माइक उघडता आला नाही — कृपया टाइप करा.'
           : '🎤 Could not open the microphone — please type instead.'));
     }
   };

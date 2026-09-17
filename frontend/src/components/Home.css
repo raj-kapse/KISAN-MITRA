@@ -66,6 +66,59 @@
   cursor: pointer;
 }
 
+/* City fallback inside the weather error state (geolocation denied/unavailable) */
+.home-weather-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: stretch;
+}
+
+.home-weather-city {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.home-weather-city input {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.home-weather-city input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.home-weather-city button {
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.home-weather-city button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.home-weather-city-error {
+  color: var(--color-status-severe-strong);
+  font-size: var(--font-size-xs);
+}
+
 .home-weather-main {
   display: flex;
   align-items: center;

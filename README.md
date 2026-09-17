@@ -232,6 +232,10 @@ kisan-mitra/
 
 Non-plant images return `disease_name: "Invalid Image"` instead of an error, and low-confidence results (<50%) trigger a "consult a local expert" warning in the UI.
 
+## Deployment Notes
+
+Set `TRUST_PROXY=1` on hosts behind a reverse proxy (Render/Railway) so per-user rate limiting works; `PROFILE_AUTH_SECRET` must be set explicitly in production or all sessions reset on restart. A phone number can only be active on one device at a time (no password recovery yet).
+
 ## Hackathon Topic Coverage
 
 **AG-01 — Smart crop disease detection (image processing + ML):**

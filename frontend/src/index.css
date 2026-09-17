@@ -45,10 +45,18 @@
   --color-info: #1E5A8A;
   --color-info-bg: #EAF3FA;
 
+  /* Overlays (landing hero, confirm dialogs) */
+  --color-overlay: rgba(22, 48, 31, 0.5);
+  --color-hero-from: rgba(22, 48, 31, 0.82);
+  --color-hero-mid: rgba(22, 48, 31, 0.55);
+  --color-hero-to: rgba(22, 48, 31, 0.9);
+  --color-page-tint-1: rgba(38, 61, 44, 0.28);
+  --color-page-tint-2: rgba(38, 61, 44, 0.16);
+  --color-page-tint-3: rgba(247, 246, 242, 0.4);
+
   /* Borders */
   --color-border: #E4E1D8;
   --color-border-strong: #B8B2A4;
-  --color-overlay: rgba(22, 48, 31, 0.5);
 
   /* Typography — Hind; scale 12/14/16/18/22/28/36 */
   --font-family: 'Hind', system-ui, -apple-system, sans-serif;
@@ -99,6 +107,57 @@
   --shadow-3d-btn-active: var(--shadow-sm);
   --shadow-3d-cta: var(--shadow-md);
   --shadow-3d-cta-active: var(--shadow-sm);
+}
+
+/* ----------------------------------------
+ * Black & white theme — for farmers who prefer a
+ * high-contrast, color-neutral interface. Set via
+ * <html data-theme="mono">; the toggle lives in the header.
+ * ---------------------------------------- */
+[data-theme='mono'] {
+  /* Brand → pure grays */
+  --color-primary: #1A1A1A;
+  --color-primary-dark: #000000;
+  --color-primary-soft: #767676;
+  --color-accent-cta: #111111;
+  --color-accent-cta-press: #000000;
+
+  /* Surfaces & text — cool paper whites */
+  --color-bg: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-surface-tint: #F2F2F2;
+  --color-text: #111111;
+  --color-text-light: #444444;
+  --color-text-on-dark: #FFFFFF;
+
+  /* Status — gray fills, black strong-text keeps tiers readable
+   * (bg fills stay distinct so healthy/moderate/severe don't blur together) */
+  --color-status-healthy: #6B6B6B;
+  --color-status-healthy-strong: #1A1A1A;
+  --color-status-healthy-bg: #F0F0F0;
+  --color-status-moderate: #9E9E9E;
+  --color-status-moderate-strong: #1A1A1A;
+  --color-status-moderate-bg: #E6E6E6;
+  --color-status-severe: #555555;
+  --color-status-severe-strong: #1A1A1A;
+  --color-status-severe-bg: #DBDBDB;
+
+  /* Info — dark gray (no blue) */
+  --color-info: #1A1A1A;
+  --color-info-bg: #F0F0F0;
+
+  /* Overlays — neutral black */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-hero-from: rgba(0, 0, 0, 0.82);
+  --color-hero-mid: rgba(0, 0, 0, 0.55);
+  --color-hero-to: rgba(0, 0, 0, 0.9);
+  --color-page-tint-1: rgba(0, 0, 0, 0.28);
+  --color-page-tint-2: rgba(0, 0, 0, 0.16);
+  --color-page-tint-3: rgba(250, 250, 250, 0.4);
+
+  /* Borders */
+  --color-border: #E0E0E0;
+  --color-border-strong: #8F8F8F;
 }
 
 /* Reset */

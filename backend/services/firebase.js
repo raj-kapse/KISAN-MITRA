@@ -109,9 +109,6 @@ async function getRecentScans(limit = 20, deviceId = null, profileId = null) {
       // Requires the automatic single-field index on deviceId + manual ordering
       query = query.where('deviceId', '==', deviceId);
     }
-    if (profileId) {
-      query = query.where('profileId', '==', profileId);
-    }
     const snapshot = await query
       .orderBy('createdAt', 'desc')
       .limit(limit)

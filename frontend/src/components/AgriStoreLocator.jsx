@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MapPin, Building2 } from 'lucide-react';
 import { getStores, geocodeCity } from '../api';
 import './AgriStoreLocator.css';
 
@@ -24,11 +25,17 @@ function AgriStoreLocator({ lang }) {
     title: { en: 'Nearby Stores', hi: 'नज़दीकी स्टोर', mr: 'जवळील दुकाने' },
     searching: { en: 'Searching...', hi: 'खोज रहा है...', mr: 'शोधत आहे...' },
     retry: { en: 'Retry', hi: 'पुनः प्रयास करें', mr: 'पुन्हा प्रयत्न करा' },
-    citySearch: { en: '🏙️ Search by city', hi: '🏙️ शहर खोजें', mr: '🏙️ शहर शोधा' },
+    citySearch: { en: 'Search by city', hi: 'शहर खोजें', mr: 'शहर शोधा' },
     cityPlaceholder: { en: 'e.g. Nashik', hi: 'जैसे: नाशिक', mr: 'उदा. नाशिक' },
     search: { en: 'Search', hi: 'खोजें', mr: 'शोधा' },
     none: { en: 'No stores found nearby.', hi: 'आसपास कोई स्टोर नहीं मिला।', mr: 'जवळ एकही दुकान सापडली नाही.' },
     away: { en: 'away', hi: 'दूर', mr: 'अंतरावर' },
+    // BUG 5: trilingual error strings instead of raw English provider messages
+    geoUnsupported: { en: 'Location not supported — search your city below.', hi: 'लोकेशन समर्थित नहीं — नीचे अपना शहर खोजें।', mr: 'स्थान समर्थित नाही — खाली तुमचे शहर शोधा.' },
+    geoDenied: { en: 'Location permission is off — search your city below.', hi: 'लोकेशन की अनुमति बंद है — नीचे अपना शहर खोजें।', mr: 'स्थानाची परवानगी बंद आहे — खाली तुमचे शहर शोधा.' },
+    geoFailed: { en: 'Could not get your location — search your city below.', hi: 'आपकी लोकेशन नहीं मिली — नीचे अपना शहर खोजें।', mr: 'तुमचे स्थान मिळाले नाही — खाली तुमचे शहर शोधा.' },
+    cityFailed: { en: 'Could not find stores for that city — try a larger nearby town.', hi: 'इस शहर के लिए स्टोर नहीं मिले — पास के बड़े शहर को आज़माएँ।', mr: 'या शहरासाठी दुकाने सापडली नाहीत — जवळचे मोठे शहर वापरा.' },
+    genericFailed: { en: 'Failed to locate stores — try again.', hi: 'स्टोर खोजने में समस्या — फिर से कोशिश करें।', mr: 'दुकाने शोधण्यात समस्या — पुन्हा प्रयत्न करा.' },
   }[lang] || {};
 
   const fetchStores = async (lat, lon) => {
@@ -48,17 +55,31 @@ function AgriStoreLocator({ lang }) {
     try {
       const position = await new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-          reject(new Error('Geolocation not supported'));
+          const err = new Error('geoUnsupported');
+          err.code = 'GEO_UNSUPPORTED';
+          reject(err);
           return;
         }
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+        navigator.geolocation.getCurrentPosition(resolve, (geoErr) => {
+          const err = new Error(
+            geoErr.code === 1 ? 'geoDenied' : 'geoFailed'
+          );
+          err.code = geoErr.code === 1 ? 'GEO_DENIED' : 'GEO_FAILED';
+          reject(err);
+        }, { timeout: 10000 });
       });
 
       const { latitude, longitude } = position.coords;
       await fetchStores(latitude, longitude);
     } catch (err) {
-      // Geolocation failed — offer the city search instead of a dead end
-      setError(err.message || 'Failed to locate stores');
+      // Geolocation failed — offer the city search instead of a dead end.
+      // Show the trilingual message for the failure reason (BUG 5).
+      const key = ['GEO_UNSUPPORTED', 'GEO_DENIED', 'GEO_FAILED'].includes(err.code)
+        ? err.code === 'GEO_UNSUPPORTED' ? 'geoUnsupported'
+        : err.code === 'GEO_DENIED' ? 'geoDenied'
+        : 'geoFailed'
+        : 'genericFailed';
+      setError(L[key] || L.genericFailed);
       setShowCityInput(true);
     } finally {
       setLoading(false);
@@ -79,7 +100,7 @@ function AgriStoreLocator({ lang }) {
       setShowCityInput(false);
       setCityQuery('');
     } catch (err) {
-      setError(err.message || 'Could not find stores for that city');
+      setError(L.cityFailed); // trilingual generic, not the raw English provider error
     } finally {
       setCityLoading(false);
     }
@@ -89,7 +110,7 @@ function AgriStoreLocator({ lang }) {
     return (
       <div className="store-locator-start">
         <button className="store-locator-btn" onClick={findStores}>
-          📍 {L.find}
+          <MapPin size={15} aria-hidden="true" /> {L.find}
         </button>
       </div>
     );
@@ -100,7 +121,7 @@ function AgriStoreLocator({ lang }) {
   return (
     <div className="store-locator-results">
       <h5 className="store-locator-title">
-        📍 {L.title}
+        <MapPin size={14} aria-hidden="true" /> {L.title}
       </h5>
 
       {busy && <div className="store-loading">{L.searching}</div>}
@@ -147,7 +168,7 @@ function AgriStoreLocator({ lang }) {
             className="store-retry-btn store-city-toggle"
             onClick={() => setShowCityInput(true)}
           >
-            {L.citySearch}
+            <Building2 size={14} aria-hidden="true" /> {L.citySearch}
           </button>
         )
       )}

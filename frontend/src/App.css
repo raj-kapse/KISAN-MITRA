@@ -16,9 +16,9 @@
   z-index: -1;
   background:
     linear-gradient(
-      rgba(38, 61, 44, 0.28),
-      rgba(38, 61, 44, 0.16) 45%,
-      rgba(247, 246, 242, 0.4)
+      var(--color-page-tint-1),
+      var(--color-page-tint-2) 45%,
+      var(--color-page-tint-3)
     ),
     url('/field-bg.jpg') center 30% / cover no-repeat;
 }

@@ -76,7 +76,7 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
     parts.push(`${L.disease}: ${name}`);
 
     const confPercent = Math.round((d.confidence || 0) * 100);
-    parts.push(`${L.conf}: ${confPercent} ${lang === 'en' ? 'percent' : 'प्रतिशत'}`);
+    parts.push(`${L.conf}: ${confPercent} ${lang === 'en' ? 'percent' : lang === 'mr' ? 'टक्के' : 'प्रतिशत'}`);
 
     const desc = pick(d.description, d.description_hi, d.description_mr);
     if (desc) parts.push(desc);
@@ -96,7 +96,7 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
 
   const stopAll = () => {
     cancelledRef.current = true;
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel(); // BUG 2: guard — may not exist on tier-2 devices
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
