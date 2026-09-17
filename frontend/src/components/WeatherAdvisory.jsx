@@ -157,9 +157,20 @@ function WeatherAdvisory({ lang = 'en', diagnosis }) {
     ? ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Determine dynamic background class based on weather description
+  const desc = current.description.toLowerCase();
+  let weatherTheme = 'weather-theme-default';
+  if (desc.includes('rain') || desc.includes('drizzle')) weatherTheme = 'weather-theme-rain';
+  else if (desc.includes('cloud')) weatherTheme = 'weather-theme-cloudy';
+  else if (desc.includes('clear') || desc.includes('sun')) weatherTheme = 'weather-theme-sunny';
+
   return (
-    <div className="weather-card">
-      <h3 className="weather-title">🌦️ {isHi ? 'मौसम सलाह' : 'Weather Advisory'}</h3>
+    <div className={`weather-panel glass-panel ${weatherTheme}`}>
+      <div className="weather-header">
+        <h3>
+          {lang === 'hi' ? 'मौसम आधारित कृषि सलाह' : 'Weather-Driven Advisory'}
+        </h3>
+      </div>
 
       {/* Current conditions */}
       {current && (

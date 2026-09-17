@@ -51,7 +51,7 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
   const displayDesc = isHi ? (description_hi || description) : description;
 
   return (
-    <div className="diagnosis-result">
+    <div className="diagnosis-result glass-panel animate-slide-up">
       {/* Header — disease name + confidence */}
       <div className={`diagnosis-header ${isHealthy ? 'healthy' : 'diseased'}`}>
         <div className="diagnosis-title">

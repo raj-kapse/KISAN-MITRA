@@ -308,3 +308,62 @@
     display: none !important;
   }
 }
+
+/* 3D and Modern Upgrades for Diagnosis Result */
+.diagnosis-result {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  margin-bottom: var(--space-xl);
+  border: 1px solid var(--glass-border);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.diagnosis-header {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.diagnosis-header.healthy {
+  background: linear-gradient(135deg, var(--color-status-healthy-bg), #d1e8d8);
+}
+
+.diagnosis-header.diseased {
+  background: linear-gradient(135deg, var(--color-status-severe-bg), #fce4e0);
+}
+
+.severity-alert {
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: var(--weight-bold);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.treatment-grid {
+  display: grid;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.treatment-card {
+  background: var(--color-bg);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: transform 0.2s ease;
+}
+
+.treatment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}

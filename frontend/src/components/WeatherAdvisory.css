@@ -222,3 +222,34 @@
   text-decoration: underline;
   padding: 0;
 }
+
+/* Dynamic Weather Backgrounds */
+.weather-theme-sunny {
+  background: linear-gradient(135deg, rgba(255, 237, 213, 0.9), rgba(254, 215, 170, 0.9));
+  color: #7c2d12;
+}
+.weather-theme-sunny .advisory-content { background: rgba(255,255,255,0.6); }
+
+.weather-theme-rain {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(186, 230, 253, 0.9));
+  color: #0c4a6e;
+}
+.weather-theme-rain .advisory-content { background: rgba(255,255,255,0.6); }
+
+.weather-theme-cloudy {
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.9), rgba(226, 232, 240, 0.9));
+  color: #334155;
+}
+.weather-theme-cloudy .advisory-content { background: rgba(255,255,255,0.6); }
+
+.weather-theme-default {
+  background: var(--glass-bg);
+}
+
+.weather-panel {
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: var(--space-xl);
+  transition: all 0.3s ease;
+}

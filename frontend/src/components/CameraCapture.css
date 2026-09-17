@@ -242,3 +242,27 @@
   height: 100%;
   object-fit: cover;
 }
+
+.skeleton-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.6;
+  z-index: 5;
+}
+
+.blur-sm {
+  filter: blur(4px);
+}
+
+.capture-btn {
+  box-shadow: var(--shadow-soft);
+  transition: all 0.2s ease;
+}
+
+.capture-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}

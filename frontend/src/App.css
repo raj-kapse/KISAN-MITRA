@@ -222,3 +222,85 @@
   color: var(--color-text-light);
   border-top: 1px solid var(--color-border);
 }
+
+/* Bottom Navigation */
+.pb-bottom-nav {
+  padding-bottom: 80px; /* Space for the bottom nav */
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: var(--space-sm) var(--space-md) calc(env(safe-area-inset-bottom) + var(--space-sm));
+  z-index: 100;
+  border-top: 1px solid var(--color-border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-light);
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  padding: var(--space-xs);
+  transition: all 0.2s ease;
+  gap: 4px;
+}
+
+.nav-item.active {
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+  transform: translateY(-2px);
+}
+
+.nav-item:hover {
+  color: var(--color-primary-soft);
+}
+
+.btn-icon {
+  vertical-align: middle;
+  margin-right: var(--space-xs);
+}
+
+/* 3D Button Styles */
+.btn-3d {
+  background: var(--color-accent-cta);
+  box-shadow: var(--shadow-3d-cta);
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-3d-cta-active);
+}
+
+.btn-3d.disabled,
+.btn-3d:disabled {
+  background: var(--color-border-strong);
+  box-shadow: none;
+  transform: translateY(4px);
+  cursor: not-allowed;
+}
+
+.btn-3d-outline {
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-3d-btn);
+  transition: all 0.15s ease;
+}
+
+.btn-3d-outline:active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-3d-btn-active);
+}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { Camera, Upload, Image as ImageIcon } from 'lucide-react';
 import './CameraCapture.css';
 
 /**
@@ -186,7 +187,10 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
         )}
 
         {mode === 'preview' && preview && (
-          <img src={preview} alt="Crop preview" className="preview-image" />
+          <>
+            <img src={preview} alt="Crop preview" className={`preview-image ${isLoading ? 'blur-sm' : ''}`} />
+            {isLoading && <div className="skeleton-overlay skeleton"></div>}
+          </>
         )}
       </div>
 
@@ -208,10 +212,10 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
         ) : (
           <>
             <button className="capture-btn primary" onClick={startCamera} disabled={disabled}>
-              📷 Open Camera
+              <Camera size={18} className="btn-icon" /> Open Camera
             </button>
-            <label className="capture-btn upload" htmlFor="file-upload">
-              🖼️ Upload
+            <label className={`capture-btn upload ${disabled ? 'disabled' : ''}`} htmlFor="file-upload">
+              <Upload size={18} className="btn-icon" /> Upload
             </label>
             <input
               ref={fileInputRef}

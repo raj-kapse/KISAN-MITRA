@@ -100,50 +100,36 @@ function App() {
   /** Toggle language */
   const toggleLang = () => setLang(l => l === 'en' ? 'hi' : 'en');
 
+  // We'll import Lucide icons for the UI
+  const { Home, History, Leaf } = require('lucide-react');
+
   return (
     <div className="app">
-      {/* Header */}
-      <header className="app-header">
+      <header className="app-header glass-panel">
         <div className="header-top">
-          <h1>🌾 Kisan Mitra</h1>
+          <h1>Kisan Mitra</h1>
           <div className="header-controls">
-            <button className="lang-toggle" onClick={toggleLang} aria-label="Toggle language">
-              {lang === 'en' ? 'हिंदी' : 'ENG'}
+            <button
+              className="lang-toggle"
+              onClick={toggleLang}
+              aria-label="Toggle language"
+            >
+              {lang === 'en' ? 'EN' : 'HI'}
             </button>
           </div>
         </div>
-        <p className="subtitle">
-          {lang === 'hi' ? 'AI फसल स्वास्थ्य एवं सलाह' : 'AI Crop Health & Advisory'}
-        </p>
-        {/* Nav tabs */}
-        <nav className="header-nav">
-          <button
-            className={`nav-tab ${view === 'scan' ? 'active' : ''}`}
-            onClick={() => setView('scan')}
-          >
-            {lang === 'hi' ? '📸 स्कैन' : '📸 Scan'}
-          </button>
-          <button
-            className={`nav-tab ${view === 'history' ? 'active' : ''}`}
-            onClick={() => setView('history')}
-          >
-            {lang === 'hi' ? '📜 इतिहास' : '📜 History'}
-          </button>
-        </nav>
+        <p className="subtitle">AI Crop Doctor & Advisor</p>
       </header>
 
-      {/* Main content */}
-      <main className="app-main">
-
-        {/* History view */}
+      <main className="app-main pb-bottom-nav">
         {view === 'history' && (
-          <ScanHistory lang={lang} onBack={() => setView('scan')} />
+          <div className="animate-slide-up">
+            <ScanHistory lang={lang} onBack={() => setView('scan')} />
+          </div>
         )}
 
-        {/* Scan view */}
         {view === 'scan' && (
-          <>
-            {/* Step 1: Capture / Upload */}
+          <div className="animate-slide-up">
             {!diagnosis && (
               <>
                 <CameraCapture
@@ -152,71 +138,74 @@ function App() {
                   isLoading={loading}
                   lang={lang}
                 />
-
                 {selectedImage && (
                   <button
-                    className="diagnose-btn"
+                    className={`diagnose-btn btn-3d ${loading ? 'disabled' : ''}`}
                     onClick={handleDiagnose}
                     disabled={loading}
                   >
                     {loading ? (
                       <span className="loading-content">
+                        <div className="spinner" /> 
                         {lang === 'hi' ? 'विश्लेषण हो रहा है...' : 'Analyzing...'}
                       </span>
                     ) : (
-                      lang === 'hi' ? '🔬 फसल का विश्लेषण करें' : '🔬 Analyze Crop'
+                      <>
+                        <Leaf size={20} className="btn-icon" /> 
+                        {lang === 'hi' ? 'फसल का विश्लेषण करें' : 'Analyze Crop'}
+                      </>
                     )}
                   </button>
                 )}
               </>
             )}
 
-            {/* Error display */}
             {error && (
-              <div className="error-msg">
+              <div className="error-msg glass-panel">
                 <strong>Error:</strong> {error}
               </div>
             )}
 
-            {/* Step 2: Results */}
             {diagnosis && (
               <>
-                {/* Scanned image */}
                 {imagePreviewUrl && (
-                  <div className="scanned-image-container">
+                  <div className="scanned-image-container glass-panel">
                     <img src={imagePreviewUrl} alt="Scanned crop" className="scanned-image" />
                   </div>
                 )}
-
-                {/* Voice read-aloud */}
+                
                 <VoiceButton diagnosis={diagnosis} lang={lang} />
-
-                {/* Diagnosis card */}
                 <DiagnosisResult diagnosis={diagnosis} lang={lang} />
-
-                {/* Weather advisory */}
                 <WeatherAdvisory lang={lang} diagnosis={diagnosis} />
-
-                {/* Scan again */}
-                <button className="scan-again-btn" onClick={handleScanAgain}>
-                  {lang === 'hi' ? '📸 दूसरी फसल स्कैन करें' : '📸 Scan Another Crop'}
+                
+                <button className="scan-again-btn btn-3d-outline" onClick={handleScanAgain}>
+                  {lang === 'hi' ? 'दूसरी फसल स्कैन करें' : 'Scan Another Crop'}
                 </button>
               </>
             )}
-          </>
+          </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="app-footer">
-        {lang === 'hi'
-          ? 'किसान मित्र · भारतीय किसानों के लिए AI फसल सलाह'
-          : 'Kisan Mitra · AI-powered crop advisory for Indian farmers'
-        }
-      </footer>
-
       {/* Floating Chatbot */}
       <Chatbot diagnosis={diagnosis} lang={lang} />
+
+      <nav className="bottom-nav glass-panel">
+        <button 
+          className={`nav-item ${view === 'scan' ? 'active' : ''}`}
+          onClick={() => setView('scan')}
+        >
+          <Home size={24} />
+          <span>{lang === 'hi' ? 'स्कैन' : 'Scan'}</span>
+        </button>
+        <button 
+          className={`nav-item ${view === 'history' ? 'active' : ''}`}
+          onClick={() => setView('history')}
+        >
+          <History size={24} />
+          <span>{lang === 'hi' ? 'इतिहास' : 'History'}</span>
+        </button>
+      </nav>
     </div>
   );
 }
