@@ -5,6 +5,7 @@ node_modules/
 .env
 *.env.local
 firebase-service-account.json
+backend/data/
 
 # Build output
 dist/

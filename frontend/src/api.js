@@ -31,7 +31,14 @@ function timeoutError(label = 'Request') {
  * don't see each other's scans in a shared Firestore collection.
  */
 const DEVICE_ID_KEY = 'kisan_mitra_device_id';
+const PROFILE_TOKEN_KEY = 'kisan_mitra_profile_token';
 let cachedDeviceId = null;
+export function getProfileToken() {
+  try { return localStorage.getItem(PROFILE_TOKEN_KEY); } catch { return null; }
+}
+export function clearProfileToken() {
+  try { localStorage.removeItem(PROFILE_TOKEN_KEY); } catch { /* storage blocked */ }
+}
 export function getDeviceId() {
   if (cachedDeviceId) return cachedDeviceId;
   try {
@@ -104,9 +111,13 @@ export async function getWeather(lat, lon) {
  * tagged with the logged-in farmer's profile when one exists.
  */
 export async function saveScanHistory(diagnosis, location = null, profile = null) {
+  const token = getProfileToken();
   const res = await fetchWithTimeout(`${API_BASE}/api/history`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({
       diagnosis,
       location,
@@ -130,7 +141,10 @@ export async function getHistory(limit = 20, profile = null) {
   const scope = profile?.id
     ? `profileId=${encodeURIComponent(profile.id)}`
     : `deviceId=${encodeURIComponent(getDeviceId())}`;
-  const res = await fetchWithTimeout(`${API_BASE}/api/history?limit=${limit}&${scope}`);
+  const token = getProfileToken();
+  const res = await fetchWithTimeout(`${API_BASE}/api/history?limit=${limit}&${scope}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `History fetch failed: ${res.status}`);
@@ -143,9 +157,13 @@ export async function getHistory(limit = 20, profile = null) {
  * A 409 response means "phone is new, name required".
  */
 export async function loginProfile(phone, name = '') {
+  const token = getProfileToken();
   const res = await fetchWithTimeout(`${API_BASE}/api/profile/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ phone, name }),
   }, 15000);
   const body = await res.json().catch(() => ({}));
@@ -153,6 +171,9 @@ export async function loginProfile(phone, name = '') {
     const err = new Error(body.error || `Sign-in failed: ${res.status}`);
     err.nameRequired = Boolean(body.nameRequired);
     throw err;
+  }
+  if (body.profile?.token) {
+    try { localStorage.setItem(PROFILE_TOKEN_KEY, body.profile.token); } catch { /* storage blocked */ }
   }
   return body.profile;
 }

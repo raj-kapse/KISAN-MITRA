@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, Upload, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload } from 'lucide-react';
 import './CameraCapture.css';
 
 /**

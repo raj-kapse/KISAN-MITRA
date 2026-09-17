@@ -53,9 +53,6 @@ function Chatbot({ diagnosis, lang }) {
     }
   }, [isOpen, messages.length, lang]);
 
-  // Cleanup recorder stream on close/unmount
-  useEffect(() => () => stopStream(), []);
-
   const stopStream = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -66,6 +63,9 @@ function Chatbot({ diagnosis, lang }) {
       recordTimerRef.current = null;
     }
   };
+
+  // Cleanup recorder stream on close/unmount
+  useEffect(() => () => stopStream(), []);
 
   const toggleChat = () => {
     if (isOpen && voiceState === 'recording') cancelRecording();

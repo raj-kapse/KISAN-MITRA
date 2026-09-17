@@ -12,12 +12,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 
 // Bounded demo-tier store
 const MAX_PROFILES = 500;
+const PROFILE_AUTH_SECRET = process.env.PROFILE_AUTH_SECRET || crypto.randomBytes(32).toString('hex');
 
 /** Normalise an Indian phone number to its last 10 digits for matching. */
 function normalisePhone(raw) {
@@ -46,7 +48,34 @@ function writeProfiles(profiles) {
  * Login-or-register by phone. Returns { id, name, phone, createdAt, isNew }.
  * `name` is required only when the phone is new.
  */
-function loginOrRegister(rawPhone, rawName) {
+function createProfileToken(profile) {
+  const payload = Buffer.from(JSON.stringify({
+    id: profile.id,
+    phone: profile.phone,
+    exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', PROFILE_AUTH_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function verifyProfileToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature) return null;
+  const expected = crypto.createHmac('sha256', PROFILE_AUTH_SECRET).update(payload).digest('base64url');
+  if (signature.length !== expected.length ||
+      !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!data.id || !data.phone || data.exp < Date.now()) return null;
+    const profile = readProfiles().find((item) => item.id === data.id && item.phone === data.phone);
+    return profile ? { id: profile.id, phone: profile.phone, name: profile.name } : null;
+  } catch {
+    return null;
+  }
+}
+
+function loginOrRegister(rawPhone, rawName, authToken) {
   const phone = normalisePhone(rawPhone);
   if (!phone) {
     const err = new Error('Enter a valid 10-digit phone number.');
@@ -58,12 +87,18 @@ function loginOrRegister(rawPhone, rawName) {
   const existing = profiles.find((p) => p.phone === phone);
 
   if (existing) {
+    const authenticated = verifyProfileToken(authToken);
+    if (!authenticated || authenticated.id !== existing.id) {
+      const err = new Error('This phone is already registered. Use the same device session to sign in.');
+      err.code = 'AUTH_REQUIRED';
+      throw err;
+    }
     // Known phone → login. A NEW name in the request updates the display name.
     const name = (rawName || '').trim().slice(0, 60) || existing.name;
     existing.name = name;
     existing.lastLoginAt = new Date().toISOString();
     writeProfiles(profiles);
-    return { ...existing, isNew: false };
+    return { ...existing, token: createProfileToken(existing), isNew: false };
   }
 
   // New phone → register (name required)
@@ -83,7 +118,7 @@ function loginOrRegister(rawPhone, rawName) {
   };
   profiles.unshift(profile);
   writeProfiles(profiles.slice(0, MAX_PROFILES));
-  return { ...profile, isNew: true };
+  return { ...profile, token: createProfileToken(profile), isNew: true };
 }
 
 /** Look up a profile by phone (used to hydrate a saved session). */
@@ -93,4 +128,4 @@ function getByPhone(rawPhone) {
   return readProfiles().find((p) => p.phone === phone) || null;
 }
 
-module.exports = { loginOrRegister, getByPhone };
+module.exports = { loginOrRegister, getByPhone, verifyProfileToken };

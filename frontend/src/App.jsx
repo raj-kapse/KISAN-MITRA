@@ -18,7 +18,7 @@ import ScanHistory from './components/ScanHistory';
 import Chatbot from './components/Chatbot';
 import LandingPage from './components/LandingPage';
 import ProfileModal from './components/ProfileModal';
-import { diagnoseCrop, saveScanHistory } from './api';
+import { diagnoseCrop, saveScanHistory, clearProfileToken } from './api';
 import './App.css';
 
 /**
@@ -86,6 +86,7 @@ function App() {
 
   const handleSignOut = () => {
     setProfile(null);
+    clearProfileToken();
     try { localStorage.removeItem('kisan_mitra_profile'); } catch { /* storage blocked */ }
   };
 

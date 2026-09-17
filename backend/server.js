@@ -36,7 +36,7 @@ const PORT = process.env.PORT || 5000;
 // Trust one layer of reverse proxy (Render, Railway, Cloudflare, etc.)
 // so req.ip is the real client IP, not the proxy — essential for
 // per-client rate limiting to actually work in production.
-app.set('trust proxy', 1);
+if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 
 // --- Middleware ---
 
@@ -97,7 +97,7 @@ app.listen(PORT, () => {
   console.log(`\n🌾 Kisan Mitra backend running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`   Trust Proxy: enabled (1 hop)`);
+  console.log(`   Trust Proxy: ${process.env.TRUST_PROXY === '1' ? 'enabled (1 hop)' : 'disabled'}`);
   
   // Log API key status (never log the actual keys)
   console.log(`   Groq API Key: ${process.env.GROQ_API_KEY ? '✅ Set' : '❌ Missing'}`);
@@ -107,4 +107,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-

@@ -1,11 +1,12 @@
 const express = require('express');
+const { weatherRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
 /**
  * GET /api/stores?lat=X&lon=Y
  * Finds nearby agricultural stores using OpenStreetMap Overpass API.
  */
-router.get('/stores', async (req, res) => {
+router.get('/stores', weatherRateLimit, async (req, res) => {
   try {
     const { lat, lon } = req.query;
     if (!isValidCoord(lat, -90, 90) || !isValidCoord(lon, -180, 180)) {

@@ -7,6 +7,7 @@
 
 const express = require('express');
 const { saveScan, getRecentScans } = require('../services/scanStore');
+const { requireProfileAuth } = require('../middleware/profileAuth');
 
 const router = express.Router();
 
@@ -20,6 +21,13 @@ router.get('/history', async (req, res) => {
     // Scope priority: logged-in profile → else the calling device
     const deviceId = (req.query.deviceId || '').toString().trim().slice(0, 128) || null;
     const profileId = (req.query.profileId || '').toString().trim().slice(0, 64) || null;
+    if (profileId) {
+      const auth = requireProfileAuth(req, res, () => {});
+      if (auth) return auth;
+      if (req.profile.id !== profileId) {
+        return res.status(403).json({ success: false, error: 'You can only access your own history.' });
+      }
+    }
     const scans = await getRecentScans(limit, deviceId, profileId);
     return res.json({ success: true, scans });
   } catch (err) {
@@ -40,11 +48,20 @@ router.post('/history', async (req, res) => {
   try {
     const { diagnosis, location, deviceId, profileId, profileName } = req.body;
 
-    if (!diagnosis) {
+    if (!diagnosis || typeof diagnosis !== 'object' || Array.isArray(diagnosis) ||
+        typeof diagnosis.disease_name !== 'string' || typeof diagnosis.crop_type !== 'string') {
       return res.status(400).json({
         success: false,
         error: 'Missing diagnosis data in request body.',
       });
+    }
+
+    if (profileId) {
+      const auth = requireProfileAuth(req, res, () => {});
+      if (auth) return auth;
+      if (req.profile.id !== profileId) {
+        return res.status(403).json({ success: false, error: 'You can only save to your own history.' });
+      }
     }
 
     const scanData = {

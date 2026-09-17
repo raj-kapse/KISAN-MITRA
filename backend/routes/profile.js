@@ -7,6 +7,7 @@
 
 const express = require('express');
 const { loginOrRegister, getByPhone } = require('../services/profileStore');
+const { getBearerToken, requireProfileAuth } = require('../middleware/profileAuth');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const router = express.Router();
 
@@ -17,7 +18,7 @@ const profileRateLimit = createRateLimiter('profile', 10, 60_000);
 router.post('/profile/login', profileRateLimit, (req, res) => {
   try {
     const { phone, name } = req.body || {};
-    const profile = loginOrRegister(phone, name);
+    const profile = loginOrRegister(phone, name, getBearerToken(req));
     return res.json({ success: true, profile });
   } catch (err) {
     if (err.code === 'INVALID_PHONE') {
@@ -27,17 +28,19 @@ router.post('/profile/login', profileRateLimit, (req, res) => {
       // 409 tells the frontend: show the name field and retry
       return res.status(409).json({ success: false, error: err.message, nameRequired: true });
     }
+    if (err.code === 'AUTH_REQUIRED') {
+      return res.status(401).json({ success: false, error: err.message, authRequired: true });
+    }
     console.error('❌ Profile login error:', err.message);
     return res.status(500).json({ success: false, error: 'Could not sign you in. Please try again.' });
   }
 });
 
-router.get('/profile', profileRateLimit, (req, res) => {
-  const profile = getByPhone(req.query.phone);
-  if (!profile) {
-    return res.status(404).json({ success: false, error: 'No profile found for this phone.' });
-  }
-  return res.json({ success: true, profile });
+router.get('/profile', requireProfileAuth, (req, res) => {
+  const profile = getByPhone(req.profile.phone);
+  return profile
+    ? res.json({ success: true, profile })
+    : res.status(404).json({ success: false, error: 'No profile found.' });
 });
 
 module.exports = router;
