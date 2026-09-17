@@ -26,6 +26,7 @@ const historyRoutes = require('./routes/history');
 const storesRoutes = require('./routes/stores');
 const chatRoutes = require('./routes/chat');
 const transcribeRoutes = require('./routes/transcribe');
+const ttsRoutes = require('./routes/tts');
 
 // --- App setup ---
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api', historyRoutes);
 app.use('/api', storesRoutes);
 app.use('/api', chatRoutes);
 app.use('/api', transcribeRoutes);
+app.use('/api', ttsRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

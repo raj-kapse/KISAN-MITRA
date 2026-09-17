@@ -44,12 +44,12 @@ function Chatbot({ diagnosis, lang }) {
   // Initial greeting
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([{
-        role: 'model',
-        content: lang === 'hi'
-          ? 'नमस्ते! मैं आपका किसान मित्र AI सहायक हूँ। आप अपनी फसल की रिपोर्ट या किसी भी कृषि समस्या के बारे में मुझसे पूछ सकते हैं।'
-          : 'Hello! I am your Kisan Mitra AI assistant. You can ask me about your crop report or any farming related questions.'
-      }]);
+      const greetings = {
+        en: 'Hello! I am your Kisan Mitra AI assistant. You can ask me about your crop report or any farming related questions.',
+        hi: 'नमस्ते! मैं आपका किसान मित्र AI सहायक हूँ। आप अपनी फसल की रिपोर्ट या किसी भी कृषि समस्या के बारे में मुझसे पूछ सकते हैं।',
+        mr: 'नमस्कार! मी तुमचा शेतकरी मित्र AI सहाय्यक आहे. तुमच्या पिकाच्या रिपोर्टबद्दल किंवा कोणत्याही शेती समस्येबद्दल मला विचारू शकता.',
+      };
+      setMessages([{ role: 'model', content: greetings[lang] || greetings.en }]);
     }
   }, [isOpen, messages.length, lang]);
 
@@ -79,7 +79,8 @@ function Chatbot({ diagnosis, lang }) {
     // Strip markdown emphasis so it isn't read out
     const clean = text.replace(/[*_#`]/g, '');
     const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    // Devanagari languages share hi-IN voices when mr-IN is unavailable
+    utterance.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
     utterance.rate = 0.95;
     window.speechSynthesis.speak(utterance);
   };
@@ -99,7 +100,12 @@ function Chatbot({ diagnosis, lang }) {
 
     try {
       // Build context from diagnosis if it exists
-      let context = 'You are Kisan Mitra, a helpful AI agricultural assistant for Indian farmers.';
+      const langLine = lang === 'hi'
+        ? 'Reply in Hindi (Devanagari script).'
+        : lang === 'mr'
+          ? 'Reply in Marathi (Devanagari script).'
+          : 'Reply in the language the farmer uses (English or Hindi).';
+      let context = `You are Kisan Mitra, a helpful AI agricultural assistant for Indian farmers. ${langLine}`;
       if (diagnosis && diagnosis.disease_name?.toLowerCase() !== 'healthy' && diagnosis.disease_name !== 'Invalid Image') {
         context += ` The farmer recently scanned a crop diagnosed with ${diagnosis.disease_name}. Symptoms: ${diagnosis.symptoms?.join(', ')}. Chemical Treatment: ${diagnosis.treatment?.chemical}. Organic Treatment: ${diagnosis.treatment?.organic}.`;
       }

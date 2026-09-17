@@ -29,7 +29,7 @@ function App() {
   const [error, setError] = useState(null);
 
   // UI state
-  const [lang, setLang] = useState('en'); // 'en' or 'hi'
+  const [lang, setLang] = useState('en'); // 'en' | 'hi' | 'mr'
   const [view, setView] = useState('scan'); // 'scan' or 'history'
 
   // Increments on every new diagnose request; responses from superseded
@@ -97,8 +97,9 @@ function App() {
     setError(null);
   };
 
-  /** Toggle language */
-  const toggleLang = () => setLang(l => l === 'en' ? 'hi' : 'en');
+  /** Cycle language: English → हिंदी → मराठी → English */
+  const toggleLang = () => setLang(l => l === 'en' ? 'hi' : l === 'hi' ? 'mr' : 'en');
+  const nextLangLabel = { en: 'हिंदी', hi: 'मराठी', mr: 'ENG' }[lang];
 
   // We'll import Lucide icons for the UI
   const { Home, History, Leaf } = require('lucide-react');
@@ -114,11 +115,13 @@ function App() {
               onClick={toggleLang}
               aria-label="Toggle language"
             >
-              {lang === 'en' ? 'EN' : 'HI'}
+              {nextLangLabel}
             </button>
           </div>
         </div>
-        <p className="subtitle">AI Crop Doctor & Advisor</p>
+        <p className="subtitle">
+          {lang === 'hi' ? 'AI फसल स्वास्थ्य एवं सलाह' : lang === 'mr' ? 'AI पीक आरोग्य व सल्ला' : 'AI Crop Health & Advisory'}
+        </p>
       </header>
 
       <main className="app-main pb-bottom-nav">
@@ -146,13 +149,13 @@ function App() {
                   >
                     {loading ? (
                       <span className="loading-content">
-                        <div className="spinner" /> 
-                        {lang === 'hi' ? 'विश्लेषण हो रहा है...' : 'Analyzing...'}
+                        <div className="spinner" />
+                        {lang === 'hi' ? 'विश्लेषण हो रहा है...' : lang === 'mr' ? 'विश्लेषण सुरू आहे...' : 'Analyzing...'}
                       </span>
                     ) : (
                       <>
-                        <Leaf size={20} className="btn-icon" /> 
-                        {lang === 'hi' ? 'फसल का विश्लेषण करें' : 'Analyze Crop'}
+                        <Leaf size={20} className="btn-icon" />
+                        {lang === 'hi' ? 'फसल का विश्लेषण करें' : lang === 'mr' ? 'पीक विश्लेषण करा' : 'Analyze Crop'}
                       </>
                     )}
                   </button>
@@ -177,9 +180,8 @@ function App() {
                 <VoiceButton diagnosis={diagnosis} lang={lang} />
                 <DiagnosisResult diagnosis={diagnosis} lang={lang} />
                 <WeatherAdvisory lang={lang} diagnosis={diagnosis} />
-                
                 <button className="scan-again-btn btn-3d-outline" onClick={handleScanAgain}>
-                  {lang === 'hi' ? 'दूसरी फसल स्कैन करें' : 'Scan Another Crop'}
+                  {lang === 'hi' ? 'दूसरी फसल स्कैन करें' : lang === 'mr' ? 'दुसरे पीक स्कॅन करा' : 'Scan Another Crop'}
                 </button>
               </>
             )}
@@ -196,14 +198,14 @@ function App() {
           onClick={() => setView('scan')}
         >
           <Home size={24} />
-          <span>{lang === 'hi' ? 'स्कैन' : 'Scan'}</span>
+          <span>{lang === 'hi' ? 'स्कैन' : lang === 'mr' ? 'स्कॅन' : 'Scan'}</span>
         </button>
         <button 
           className={`nav-item ${view === 'history' ? 'active' : ''}`}
           onClick={() => setView('history')}
         >
           <History size={24} />
-          <span>{lang === 'hi' ? 'इतिहास' : 'History'}</span>
+          <span>{lang === 'hi' ? 'इतिहास' : lang === 'mr' ? 'इतिहास' : 'History'}</span>
         </button>
       </nav>
     </div>

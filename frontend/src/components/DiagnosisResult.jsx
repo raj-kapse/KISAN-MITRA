@@ -1,15 +1,18 @@
 /**
- * DiagnosisResult — Displays the AI diagnosis results with bilingual toggle
+ * DiagnosisResult — Displays the AI diagnosis results
  *
- * Shows:
+ * Shows (in English / Hindi / Marathi):
  * - Disease name with confidence badge
- * - Severity indicator
+ * - Severity indicator + economic yield risk
  * - Description of what was detected
+ * - Symptoms detected in the image
+ * - Next steps: a numbered, chronological action plan for the farmer
  * - Treatment recommendations (chemical, organic, preventive)
- * - Crop type identification
- * - Language toggle (English / Hindi) — uses *_hi fields from API response
+ * - Extra practical tips
+ * - Nearby agri-store locator
  *
- * Handles confidence-based styling (green for high, yellow for medium, red for low).
+ * Language fields come straight from the AI response (*_hi / *_mr),
+ * falling back to English when a translation is missing.
  */
 
 import AgriStoreLocator from './AgriStoreLocator';
@@ -23,9 +26,9 @@ function getConfidenceClass(confidence) {
 
 function getSeverityInfo(severity, lang) {
   const map = {
-    mild:     { emoji: '🟢', label: lang === 'hi' ? 'हल्का' : 'Mild' },
-    moderate: { emoji: '🟡', label: lang === 'hi' ? 'मध्यम' : 'Moderate' },
-    severe:   { emoji: '🔴', label: lang === 'hi' ? 'गंभीर' : 'Severe' },
+    mild:     { emoji: '🟢', label: { en: 'Mild', hi: 'हल्का', mr: 'हलका' }[lang] || 'Mild' },
+    moderate: { emoji: '🟡', label: { en: 'Moderate', hi: 'मध्यम', mr: 'मध्यम' }[lang] || 'Moderate' },
+    severe:   { emoji: '🔴', label: { en: 'Severe', hi: 'गंभीर', mr: 'गंभीर' }[lang] || 'Severe' },
   };
   return map[severity] || { emoji: '⚪', label: severity || 'Unknown' };
 }
@@ -33,12 +36,14 @@ function getSeverityInfo(severity, lang) {
 function DiagnosisResult({ diagnosis, lang = 'en' }) {
   if (!diagnosis) return null;
 
-  const isHi = lang === 'hi';
   const {
-    disease_name, disease_name_hi,
+    disease_name, disease_name_hi, disease_name_mr,
     confidence, severity,
-    description, description_hi,
-    symptoms, treatment, crop_type,
+    description, description_hi, description_mr,
+    symptoms,
+    next_steps, next_steps_hi, next_steps_mr,
+    extra_tips, extra_tips_hi, extra_tips_mr,
+    treatment, crop_type,
   } = diagnosis;
 
   const confClass = getConfidenceClass(confidence);
@@ -46,9 +51,41 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
   const confPercent = Math.round((confidence || 0) * 100);
   const isHealthy = disease_name?.toLowerCase() === 'healthy';
 
-  // Pick the right language field, falling back to English
-  const displayName = isHi ? (disease_name_hi || disease_name) : disease_name;
-  const displayDesc = isHi ? (description_hi || description) : description;
+  // Language labels for section headings and UI strings
+  const L = {
+    analysis: { en: '📋 Analysis', hi: '📋 विश्लेषण', mr: '📋 विश्लेषण' },
+    symptoms: { en: '🔍 Symptoms Detected', hi: '🔍 लक्षण', mr: '🔍 लक्षणे' },
+    nextSteps: { en: '✅ What to do — step by step', hi: '✅ क्या करें — क्रम से', mr: '✅ काय करावे — क्रमाने' },
+    treatment: { en: '💊 Treatment', hi: '💊 उपचार', mr: '💊 उपचार' },
+    chemical: { en: '🧪 Chemical', hi: '🧪 रासायनिक', mr: '🧪 रासायनिक' },
+    organic: { en: '🌱 Organic', hi: '🌱 जैविक', mr: '🌱 सेंद्रिय' },
+    prevention: { en: '🛡️ Prevention', hi: '🛡️ रोकथाम', mr: '🛡️ प्रतिबंध' },
+    tips: { en: '💡 Extra Tips', hi: '💡 अतिरिक्त सुझाव', mr: '💡 अतिरिक्त टिप्स' },
+    lowConf: {
+      en: '⚠️ Low confidence — please consult a local agricultural expert for accurate diagnosis.',
+      hi: '⚠️ कम विश्वास — कृपया सटीक निदान के लिए स्थानीय कृषि विशेषज्ञ से परामर्श करें।',
+      mr: '⚠️ कमी विश्वास — अचूक निदानासाठी कृपया स्थानिक कृषी तज्ज्ञांचा सल्ला घ्या.',
+    },
+    healthy: {
+      en: '🎉 Great news! Your crop looks healthy. Keep up the good farming practices!',
+      hi: '🎉 बढ़िया खबर! आपकी फसल स्वस्थ दिख रही है। अच्छी खेती की आदतें जारी रखें!',
+      mr: '🎉 आनंदाची बातमी! तुमचे पीक निरोगी दिसते आहे. चांगल्या शेती पद्धती सुरू ठेवा!',
+    },
+  }[lang] || {};
+
+  // Pick the field for the active language with graceful fallbacks
+  const pick = (en, hi, mr) =>
+    lang === 'hi' ? (hi ?? en) : lang === 'mr' ? (mr ?? hi ?? en) : en;
+
+  const displayName = pick(disease_name, disease_name_hi, disease_name_mr);
+  const displayDesc = pick(description, description_hi, description_mr);
+  const steps = pick(next_steps, next_steps_hi, next_steps_mr) || [];
+  const tips = pick(extra_tips, extra_tips_hi, extra_tips_mr) || [];
+
+  const chemText = treatment ? pick(treatment.chemical, treatment.chemical_hi, treatment.chemical_mr) : null;
+  const orgText = treatment ? pick(treatment.organic, treatment.organic_hi, treatment.organic_mr) : null;
+  const prevText = treatment ? pick(treatment.preventive, treatment.preventive_hi, treatment.preventive_mr) : null;
+  const yieldText = pick(diagnosis.yield_risk, diagnosis.yield_risk_hi, diagnosis.yield_risk_mr);
 
   return (
     <div className="diagnosis-result glass-panel animate-slide-up">
@@ -65,18 +102,13 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
 
       {/* Low-confidence warning */}
       {confidence < 0.5 && (
-        <div className="low-confidence-warning">
-          {isHi
-            ? '⚠️ कम विश्वास — कृपया सटीक निदान के लिए स्थानीय कृषि विशेषज्ञ से परामर्श करें।'
-            : '⚠️ Low confidence — please consult a local agricultural expert for accurate diagnosis.'
-          }
-        </div>
+        <div className="low-confidence-warning">{L.lowConf}</div>
       )}
 
       {/* Severity */}
       {!isHealthy && severity && (
         <div className="info-row severity-row">
-          <span className="info-label">{isHi ? 'गंभीरता' : 'Severity'}</span>
+          <span className="info-label">{lang === 'hi' ? 'गंभीरता' : lang === 'mr' ? 'गंभीरता' : 'Severity'}</span>
           <span className="severity-badge">
             {sevInfo.emoji} {sevInfo.label}
           </span>
@@ -84,19 +116,17 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
       )}
 
       {/* Yield Risk */}
-      {!isHealthy && diagnosis.yield_risk && (
+      {!isHealthy && yieldText && (
         <div className="info-row yield-risk-row">
-          <span className="info-label">{isHi ? 'आर्थिक जोखिम' : 'Economic Risk'}</span>
-          <span className="yield-risk-badge">
-            ⚠️ {isHi ? (diagnosis.yield_risk_hi || diagnosis.yield_risk) : diagnosis.yield_risk}
-          </span>
+          <span className="info-label">{lang === 'hi' ? 'आर्थिक जोखिम' : lang === 'mr' ? 'आर्थिक धोका' : 'Economic Risk'}</span>
+          <span className="yield-risk-badge">⚠️ {yieldText}</span>
         </div>
       )}
 
       {/* Description */}
       {displayDesc && (
         <div className="diagnosis-section">
-          <h4>{isHi ? '📋 विश्लेषण' : '📋 Analysis'}</h4>
+          <h4>{L.analysis}</h4>
           <p>{displayDesc}</p>
         </div>
       )}
@@ -104,7 +134,7 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
       {/* Symptoms */}
       {symptoms && symptoms.length > 0 && (
         <div className="diagnosis-section">
-          <h4>{isHi ? '🔍 लक्षण' : '🔍 Symptoms Detected'}</h4>
+          <h4>{L.symptoms}</h4>
           <ul className="symptoms-list">
             {symptoms.map((s, i) => (
               <li key={i}>{s}</li>
@@ -113,29 +143,41 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
         </div>
       )}
 
+      {/* Next steps — numbered chronological action plan */}
+      {steps.length > 0 && (
+        <div className="diagnosis-section next-steps-section">
+          <h4>{L.nextSteps}</h4>
+          <ol className="next-steps-list">
+            {steps.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {/* Treatment recommendations */}
       {treatment && !isHealthy && (
         <div className="diagnosis-section treatment-section">
-          <h4>{isHi ? '💊 उपचार' : '💊 Treatment'}</h4>
+          <h4>{L.treatment}</h4>
 
-          {(isHi ? treatment.chemical_hi : treatment.chemical) && (
+          {chemText && (
             <div className="treatment-card chemical">
-              <span className="treatment-type">{isHi ? '🧪 रासायनिक' : '🧪 Chemical'}</span>
-              <p>{isHi ? (treatment.chemical_hi || treatment.chemical) : treatment.chemical}</p>
+              <span className="treatment-type">{L.chemical}</span>
+              <p>{chemText}</p>
             </div>
           )}
 
-          {(isHi ? treatment.organic_hi : treatment.organic) && (
+          {orgText && (
             <div className="treatment-card organic">
-              <span className="treatment-type">{isHi ? '🌱 जैविक' : '🌱 Organic'}</span>
-              <p>{isHi ? (treatment.organic_hi || treatment.organic) : treatment.organic}</p>
+              <span className="treatment-type">{L.organic}</span>
+              <p>{orgText}</p>
             </div>
           )}
 
-          {(isHi ? treatment.preventive_hi : treatment.preventive) && (
+          {prevText && (
             <div className="treatment-card preventive">
-              <span className="treatment-type">{isHi ? '🛡️ रोकथाम' : '🛡️ Prevention'}</span>
-              <p>{isHi ? (treatment.preventive_hi || treatment.preventive) : treatment.preventive}</p>
+              <span className="treatment-type">{L.prevention}</span>
+              <p>{prevText}</p>
             </div>
           )}
 
@@ -143,32 +185,39 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
         </div>
       )}
 
+      {/* Extra practical tips */}
+      {tips.length > 0 && !isHealthy && (
+        <div className="diagnosis-section tips-section">
+          <h4>{L.tips}</h4>
+          <ul className="tips-list">
+            {tips.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Healthy plant message */}
       {isHealthy && (
-        <div className="healthy-message">
-          {isHi
-            ? '🎉 बढ़िया खबर! आपकी फसल स्वस्थ दिख रही है। अच्छी खेती की आदतें जारी रखें!'
-            : '🎉 Great news! Your crop looks healthy. Keep up the good farming practices!'
-          }
-        </div>
+        <div className="healthy-message">{L.healthy}</div>
       )}
 
       {/* Action Bar: WhatsApp and Print */}
       <div className="diagnosis-actions no-print">
-        <button 
-          className="action-btn whatsapp-btn" 
+        <button
+          className="action-btn whatsapp-btn"
           onClick={() => {
             const text = `🌾 Kisan Mitra Report\nCrop: ${crop_type || 'Unknown'}\nDiagnosis: ${displayName}\nConfidence: ${confPercent}%\n\nAdvice:\n${displayDesc}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
           }}
         >
-          {isHi ? '💬 WhatsApp पर शेयर करें' : '💬 Share on WhatsApp'}
+          {lang === 'hi' ? '💬 WhatsApp पर शेयर करें' : lang === 'mr' ? '💬 व्हाट्सअॅवर शेयर करा' : '💬 Share on WhatsApp'}
         </button>
-        <button 
-          className="action-btn print-btn" 
+        <button
+          className="action-btn print-btn"
           onClick={() => window.print()}
         >
-          {isHi ? '🖨️ रिपोर्ट डाउनलोड/प्रिंट करें' : '🖨️ Download/Print Report'}
+          {lang === 'hi' ? '🖨️ रिपोर्ट डाउनलोड/प्रिंट करें' : lang === 'mr' ? '🖨️ अहवाल डाउनलोड/प्रिंट करा' : '🖨️ Download/Print Report'}
         </button>
       </div>
     </div>

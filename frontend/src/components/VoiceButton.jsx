@@ -1,86 +1,168 @@
 /**
- * VoiceButton — Text-to-Speech read-aloud using Web Speech API
+ * VoiceButton — Text-to-Speech read-aloud
  *
- * Reads the diagnosis and treatment text aloud.
- * Respects the current language toggle (English / Hindi).
+ * Two-tier speech:
+ *   1. Browser Web Speech API (instant, no server cost) — when the device
+ *      actually has voices for the target language
+ *   2. Backend Gemini TTS fallback (/api/tts → WAV) — used when the browser
+ *      has no voices (common on Linux/Android Chrome) so "Read Aloud" never
+ *      silently fails
+ *
+ * Reads the diagnosis and treatment text aloud. Respects the current
+ * language toggle (English / Hindi / Marathi).
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { speakViaServer } from '../api';
 import './VoiceButton.css';
+
+const LANG_TAGS = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' };
 
 function VoiceButton({ diagnosis, lang = 'en' }) {
   const [speaking, setSpeaking] = useState(false);
-  const utteranceRef = useRef(null);
+  const [ttsError, setTtsError] = useState(null);
+  const audioRef = useRef(null);
+  const urlRef = useRef(null);
+  const cancelledRef = useRef(false);
+
+  // Stop any playback and release the audio blob when the language changes
+  // or the component unmounts.
+  useEffect(() => () => {
+    cancelledRef.current = true;
+    window.speechSynthesis?.cancel();
+    if (audioRef.current) audioRef.current.pause();
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+  }, [lang]);
 
   if (!diagnosis || !window.speechSynthesis) return null;
+
+  /** Does the browser have any voice for this language (or a close match)? */
+  const hasVoicesFor = (tag) => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return false;
+    const base = tag.split('-')[0];
+    return voices.some((v) => v.lang.toLowerCase().startsWith(base));
+  };
 
   /**
    * Build the text to read based on language and diagnosis data.
    */
   const buildSpeechText = () => {
     const d = diagnosis;
-    const isHi = lang === 'hi';
+    const labels = {
+      en: { crop: 'Crop type', disease: 'Disease', conf: 'Confidence', chem: 'Chemical treatment', org: 'Organic treatment', prev: 'Prevention' },
+      hi: { crop: 'फसल का नाम', disease: 'रोग', conf: 'विश्वास स्तर', chem: 'रासायनिक उपचार', org: 'जैविक उपचार', prev: 'रोकथाम' },
+      mr: { crop: 'पीक', disease: 'रोग', conf: 'विश्वास', chem: 'रासायनिक उपचार', org: 'सेंद्रिय उपचार', prev: 'प्रतिबंध' },
+    };
+    const L = labels[lang] || labels.en;
+    const pick = (en, hi, mr) => (lang === 'hi' ? (hi || en) : lang === 'mr' ? (mr || hi || en) : en);
+
     const parts = [];
+    const name = pick(d.disease_name, d.disease_name_hi, d.disease_name_mr);
+    parts.push(`${L.crop}: ${d.crop_type}`);
+    parts.push(`${L.disease}: ${name}`);
 
-    // Disease name
-    const name = isHi ? (d.disease_name_hi || d.disease_name) : d.disease_name;
-    parts.push(isHi ? `फसल का नाम: ${d.crop_type}` : `Crop type: ${d.crop_type}`);
-    parts.push(isHi ? `रोग: ${name}` : `Disease: ${name}`);
-
-    // Confidence
     const confPercent = Math.round((d.confidence || 0) * 100);
-    parts.push(isHi ? `विश्वास स्तर: ${confPercent} प्रतिशत` : `Confidence: ${confPercent} percent`);
+    parts.push(`${L.conf}: ${confPercent} ${lang === 'en' ? 'percent' : 'प्रतिशत'}`);
 
-    // Description
-    const desc = isHi ? (d.description_hi || d.description) : d.description;
+    const desc = pick(d.description, d.description_hi, d.description_mr);
     if (desc) parts.push(desc);
 
-    // Treatment
     if (d.treatment && d.disease_name?.toLowerCase() !== 'healthy') {
       const t = d.treatment;
-      const chem = isHi ? (t.chemical_hi || t.chemical) : t.chemical;
-      const org = isHi ? (t.organic_hi || t.organic) : t.organic;
-      const prev = isHi ? (t.preventive_hi || t.preventive) : t.preventive;
-
-      if (chem) parts.push(isHi ? `रासायनिक उपचार: ${chem}` : `Chemical treatment: ${chem}`);
-      if (org) parts.push(isHi ? `जैविक उपचार: ${org}` : `Organic treatment: ${org}`);
-      if (prev) parts.push(isHi ? `रोकथाम: ${prev}` : `Prevention: ${prev}`);
+      const chem = pick(t.chemical, t.chemical_hi, t.chemical_mr);
+      const org = pick(t.organic, t.organic_hi, t.organic_mr);
+      const prev = pick(t.preventive, t.preventive_hi, t.preventive_mr);
+      if (chem) parts.push(`${L.chem}: ${chem}`);
+      if (org) parts.push(`${L.org}: ${org}`);
+      if (prev) parts.push(`${L.prev}: ${prev}`);
     }
 
     return parts.join('. ');
   };
 
-  const handleSpeak = () => {
+  const stopAll = () => {
+    cancelledRef.current = true;
+    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+    setSpeaking(false);
+  };
+
+  const handleSpeak = async () => {
     const synth = window.speechSynthesis;
 
     if (speaking) {
-      synth.cancel();
-      setSpeaking(false);
+      stopAll();
       return;
     }
 
+    setTtsError(null);
     const text = buildSpeechText();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
+    const tag = LANG_TAGS[lang] || 'en-IN';
 
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
+    // Tier 1: browser voices (instant, free). The voices list can load
+    // asynchronously in Chrome, so a zero-length list is treated as
+    // "unavailable" and we fall back rather than queueing into silence.
+    if (hasVoicesFor(tag)) {
+      cancelledRef.current = false;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = tag;
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.onend = () => setSpeaking(false);
+      utterance.onerror = () => setSpeaking(false);
+      setSpeaking(true);
+      synth.speak(utterance);
+      return;
+    }
 
-    utteranceRef.current = utterance;
+    // Tier 2: backend Gemini TTS → WAV blob
     setSpeaking(true);
-    synth.speak(utterance);
+    cancelledRef.current = false;
+    try {
+      const blob = await speakViaServer(text, lang);
+      if (cancelledRef.current) return; // stopped while generating
+
+      const url = URL.createObjectURL(blob);
+      urlRef.current = url;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        urlRef.current = null;
+        setSpeaking(false);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        urlRef.current = null;
+        setSpeaking(false);
+        setTtsError(lang === 'en' ? 'Could not play the audio.' : 'आवाज़ चलाने में समस्या।');
+      };
+      await audio.play();
+    } catch (err) {
+      setSpeaking(false);
+      setTtsError(err.message || 'Speech unavailable.');
+    }
   };
 
   return (
-    <button
-      className={`voice-btn ${speaking ? 'speaking' : ''}`}
-      onClick={handleSpeak}
-      aria-label={speaking ? 'Stop reading' : 'Read aloud'}
-    >
-      {speaking ? '⏹️ Stop' : '🔊 Read Aloud'}
-    </button>
+    <div className="voice-btn-wrap">
+      <button
+        className={`voice-btn ${speaking ? 'speaking' : ''}`}
+        onClick={handleSpeak}
+        aria-label={speaking ? 'Stop reading' : 'Read aloud'}
+      >
+        {speaking ? '⏹️ Stop' : '🔊 Read Aloud'}
+      </button>
+      {ttsError && <small className="voice-error">{ttsError}</small>}
+    </div>
   );
 }
 

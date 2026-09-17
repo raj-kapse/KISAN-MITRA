@@ -23,30 +23,43 @@ Exact JSON Structure:
 {
   "disease_name": "string — name of the disease, pest infestation, or 'Healthy' if no disease is found",
   "disease_name_hi": "string — Hindi translation of the disease name in Devanagari script (e.g. 'अगेती झुलसा' or 'स्वस्थ')",
+  "disease_name_mr": "string — Marathi translation of the disease name in Devanagari script",
   "confidence": 0.85,
   "severity": "mild|moderate|severe",
-  "description": "string — 2-3 sentence clear explanation of what was detected in the crop image",
+  "description": "string — 3-4 sentence clear explanation of what was detected in the crop image: what the disease is, what causes it, and why it appeared now",
   "description_hi": "string — Hindi translation of the description in Devanagari script",
-  "symptoms": ["list", "of", "visible", "symptoms", "observed"],
+  "description_mr": "string — Marathi translation of the description in Devanagari script",
+  "symptoms": ["list of visible symptoms observed in the image"],
+  "next_steps": ["4 to 6 chronological action steps the farmer should take, in order: what to do TODAY, then this week, then ongoing. Each step short, concrete, and numbered-sequentially in plain farmer-friendly language"],
+  "next_steps_hi": ["Hindi translation of each next step (same order, same count)"],
+  "next_steps_mr": ["Marathi translation of each next step (same order, same count)"],
   "treatment": {
-    "chemical": "string — recommended chemical pesticide/fungicide/fertilizer with dosage and application instructions (or 'None required' if healthy)",
+    "chemical": "string — recommended chemical pesticide/fungicide/fertilizer with exact dosage per litre of water and spray schedule (or 'None required' if healthy). Include safety: spray in the evening, waiting period before harvest",
     "chemical_hi": "string — Hindi translation of chemical treatment recommendations",
-    "organic": "string — organic or biological remedy suitable for Indian farmers (e.g. neem oil, jeevamrut, trichoderma)",
+    "chemical_mr": "string — Marathi translation of chemical treatment recommendations",
+    "organic": "string — organic or biological remedy suitable for Indian farmers (e.g. neem oil, jeevamrut, trichoderma) with dosage and how to apply",
     "organic_hi": "string — Hindi translation of organic remedy recommendations",
+    "organic_mr": "string — Marathi translation of organic remedy recommendations",
     "preventive": "string — preventive measures and agronomic practices to prevent recurrence",
-    "preventive_hi": "string — Hindi translation of preventive measures"
+    "preventive_hi": "string — Hindi translation of preventive measures",
+    "preventive_mr": "string — Marathi translation of preventive measures"
   },
+  "extra_tips": ["2 to 4 short practical tips beyond treatment: things like irrigation discipline, when it is safe to sell/consume, storage, what NOT to do, when to re-scan the crop"],
+  "extra_tips_hi": ["Hindi translation of each extra tip (same order, same count)"],
+  "extra_tips_mr": ["Marathi translation of each extra tip (same order, same count)"],
   "crop_type": "string — identified crop (e.g. tomato, wheat, rice, potato, cotton, mustard)",
   "yield_risk": "string — economic/yield loss if untreated (e.g. '30-40% yield loss')",
-  "yield_risk_hi": "string — Hindi translation of yield_risk"
+  "yield_risk_hi": "string — Hindi translation of yield_risk",
+  "yield_risk_mr": "string — Marathi translation of yield_risk"
 }
 
 Guidelines:
 1. Accuracy: Be agronomically precise. If the image is unclear or you are not completely certain, reflect this in the confidence score (0.0 to 1.0) and mention your uncertainty in the description.
 2. Non-plant images: If the uploaded image is not a plant or crop, set "disease_name" to "Invalid Image", "crop_type" to "Unknown", "severity" to "mild", and explain in "description" that the image does not contain a recognizable crop.
-3. Language: Provide accurate and natural Hindi translations (Devanagari script) to assist rural farmers in India.
-4. Treatments: Provide practical dosages and remedies relevant to Indian farming conditions.
-5. Format: Output pure valid JSON only.`;
+3. Language: Provide accurate and natural Hindi AND Marathi translations (Devanagari script) to assist rural farmers in India. The arrays next_steps/next_steps_hi/next_steps_mr and extra_tips/extra_tips_hi/extra_tips_mr MUST have the same number of items.
+4. Farmer-friendly: Write the English text in simple words a farmer can act on — no jargon without explanation. Give exact dosages (e.g. '2 grams per litre of water'), timings (e.g. 'spray in the evening'), and safety warnings (e.g. waiting period before harvest).
+5. Treatments: Provide practical dosages and remedies relevant to Indian farming conditions.
+6. Format: Output pure valid JSON only.`;
 
 /**
  * Diagnose crop disease from an image buffer using Gemini 2.5 Flash.

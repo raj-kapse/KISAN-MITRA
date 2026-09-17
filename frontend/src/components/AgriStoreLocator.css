@@ -86,3 +86,52 @@
   cursor: pointer;
   font-weight: var(--weight-semibold);
 }
+
+.store-city-form {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.store-city-form input {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.store-city-form input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.store-city-form button {
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.store-city-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.store-city-toggle {
+  width: 100%;
+  margin-top: var(--space-sm);
+}
+
+.store-locator-start {
+  margin-top: var(--space-xs);
+}

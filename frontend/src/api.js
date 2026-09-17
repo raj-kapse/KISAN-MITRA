@@ -143,3 +143,21 @@ export async function getAiWeatherAdvisory(diagnosis, weather, lang) {
   }
   return res.json();
 }
+
+/**
+ * Generates spoken audio (WAV blob) for the given text via the backend's
+ * Gemini TTS fallback — used when the browser has no speech voices.
+ * @returns {Promise<Blob>} audio/wav blob ready for <audio>.play()
+ */
+export async function speakViaServer(text, lang = 'en') {
+  const res = await fetch(`${API_BASE}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, lang }),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Speech generation failed: ${res.status}`);
+  }
+  return res.blob();
+}
