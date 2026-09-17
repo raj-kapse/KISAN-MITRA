@@ -6,6 +6,25 @@
 export const API_BASE = import.meta.env.VITE_API_URL || '';
 
 /**
+ * fetch with a hard timeout so a stalled backend can never hang the UI
+ * forever (H1). AbortSignal.timeout is supported in all modern browsers;
+ * a manual AbortController fallback keeps older WebViews working.
+ */
+function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    return fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+/** Turns an abort/time-out into a farmer-readable message. */
+function timeoutError(label = 'Request') {
+  return new Error(`${label} timed out. Please check your connection and try again.`);
+}
+
+/**
  * Anonymous per-device ID used to scope scan history to this device.
  * Survives reloads (localStorage); falls back to a session-only ID if
  * storage is unavailable. Not a login — just privacy scoping so farmers
@@ -37,7 +56,7 @@ export function getDeviceId() {
  * Calls the /api/health endpoint to verify backend connectivity.
  */
 export async function checkHealth() {
-  const res = await fetch(`${API_BASE}/api/health`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/health`, {}, 10000);
   if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
   return res.json();
 }
@@ -51,10 +70,14 @@ export async function diagnoseCrop(imageFile) {
   const formData = new FormData();
   formData.append('image', imageFile);
 
-  const res = await fetch(`${API_BASE}/api/diagnose`, {
-    method: 'POST',
-    body: formData,
-  });
+  // Uploads get a longer window: slow rural networks + AI chain time.
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE}/api/diagnose`, { method: 'POST', body: formData }, 60000);
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') throw timeoutError('Diagnosis');
+    throw err;
+  }
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
@@ -68,7 +91,7 @@ export async function diagnoseCrop(imageFile) {
  * Fetches weather data for a given location.
  */
 export async function getWeather(lat, lon) {
-  const res = await fetch(`${API_BASE}/api/weather?lat=${lat}&lon=${lon}`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/weather?lat=${lat}&lon=${lon}`, {}, 20000);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Weather fetch failed: ${res.status}`);
@@ -81,7 +104,7 @@ export async function getWeather(lat, lon) {
  * tagged with the logged-in farmer's profile when one exists.
  */
 export async function saveScanHistory(diagnosis, location = null, profile = null) {
-  const res = await fetch(`${API_BASE}/api/history`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/history`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -107,7 +130,7 @@ export async function getHistory(limit = 20, profile = null) {
   const scope = profile?.id
     ? `profileId=${encodeURIComponent(profile.id)}`
     : `deviceId=${encodeURIComponent(getDeviceId())}`;
-  const res = await fetch(`${API_BASE}/api/history?limit=${limit}&${scope}`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/history?limit=${limit}&${scope}`);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `History fetch failed: ${res.status}`);
@@ -120,11 +143,11 @@ export async function getHistory(limit = 20, profile = null) {
  * A 409 response means "phone is new, name required".
  */
 export async function loginProfile(phone, name = '') {
-  const res = await fetch(`${API_BASE}/api/profile/login`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/profile/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone, name }),
-  });
+  }, 15000);
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.success) {
     const err = new Error(body.error || `Sign-in failed: ${res.status}`);
@@ -138,7 +161,7 @@ export async function loginProfile(phone, name = '') {
  * Resolves a city name to coordinates (manual fallback when geolocation is denied).
  */
 export async function geocodeCity(query) {
-  const res = await fetch(`${API_BASE}/api/geocode?q=${encodeURIComponent(query)}`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/geocode?q=${encodeURIComponent(query)}`, {}, 15000);
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.success) {
     throw new Error(body.error || `Location search failed: ${res.status}`);
@@ -150,7 +173,7 @@ export async function geocodeCity(query) {
  * Fetches nearby agricultural stores.
  */
 export async function getStores(lat, lon) {
-  const res = await fetch(`${API_BASE}/api/stores?lat=${lat}&lon=${lon}`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/stores?lat=${lat}&lon=${lon}`, {}, 20000);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Stores fetch failed: ${res.status}`);
@@ -162,11 +185,11 @@ export async function getStores(lat, lon) {
  * Fetches combined AI advice based on weather + diagnosis.
  */
 export async function getAiWeatherAdvisory(diagnosis, weather, lang) {
-  const res = await fetch(`${API_BASE}/api/weather-advisory`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/weather-advisory`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ diagnosis, weather, lang }),
-  });
+  }, 30000);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Advisory fetch failed: ${res.status}`);
@@ -180,11 +203,11 @@ export async function getAiWeatherAdvisory(diagnosis, weather, lang) {
  * @returns {Promise<Blob>} audio/wav blob ready for <audio>.play()
  */
 export async function speakViaServer(text, lang = 'en') {
-  const res = await fetch(`${API_BASE}/api/tts`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, lang }),
-  });
+  }, 30000);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Speech generation failed: ${res.status}`);

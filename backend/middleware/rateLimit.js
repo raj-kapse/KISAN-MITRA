@@ -54,8 +54,24 @@ function createRateLimiter(name, max, windowMs = 60_000) {
   };
 }
 
-// Pre-built instances — imported by individual route files
-const aiRateLimit = createRateLimiter('ai', 20, 60_000);
+// Pre-built instances — imported by individual route files.
+// Per-feature buckets (H3): one farmer scan flow = diagnose + advisory +
+// possible TTS. Sharing a single 'ai' bucket let chat + scanning together
+// exhaust the limit, so each feature gets its own budget.
+const diagnoseRateLimit = createRateLimiter('diagnose', 10, 60_000);
+const chatRateLimit = createRateLimiter('chat', 15, 60_000);
+const advisoryRateLimit = createRateLimiter('advisory', 15, 60_000);
+const ttsRateLimit = createRateLimiter('tts', 15, 60_000);
+const transcribeRateLimit = createRateLimiter('transcribe', 10, 60_000);
 const weatherRateLimit = createRateLimiter('weather', 60, 60_000);
 
-module.exports = { createRateLimiter, aiRateLimit, weatherRateLimit };
+module.exports = {
+  createRateLimiter,
+  aiRateLimit: chatRateLimit, // legacy name — chat history
+  chatRateLimit,
+  diagnoseRateLimit,
+  advisoryRateLimit,
+  ttsRateLimit,
+  transcribeRateLimit,
+  weatherRateLimit,
+};

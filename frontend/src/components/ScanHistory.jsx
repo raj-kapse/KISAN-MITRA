@@ -5,7 +5,7 @@
  * Each entry shows: crop type, disease name, confidence, and timestamp.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getHistory } from '../api';
 import './ScanHistory.css';
 
@@ -14,28 +14,26 @@ function ScanHistory({ lang = 'en', onBack, profile = null }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const result = await getHistory(20, profile);
-        if (!cancelled) {
-          if (result.success) {
-            setScans(result.scans || []);
-          } else {
-            throw new Error(result.error || 'Failed to load history');
-          }
-        }
-      } catch (err) {
-        if (!cancelled) setError(err.message);
-      } finally {
-        if (!cancelled) setLoading(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await getHistory(20, profile);
+      if (result.success) {
+        setScans(result.scans || []);
+        setError(null);
+      } else {
+        throw new Error(result.error || 'Failed to load history');
       }
-    };
-    load();
-    return () => { cancelled = true; };
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [profile]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const isHi = lang === 'hi';
 
@@ -55,7 +53,7 @@ function ScanHistory({ lang = 'en', onBack, profile = null }) {
       {error && (
         <div className="history-error">
           <p>{error}</p>
-          <button className="retry-btn" onClick={fetchHistory}>
+          <button className="retry-btn" onClick={load}>
             {isHi ? 'पुनः प्रयास करें' : 'Retry'}
           </button>
         </div>

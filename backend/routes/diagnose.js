@@ -8,7 +8,7 @@
 const express = require('express');
 const multer = require('multer');
 const { diagnoseCropDisease } = require('../services/gemini');
-const { aiRateLimit } = require('../middleware/rateLimit');
+const { diagnoseRateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -48,7 +48,7 @@ const upload = multer({
  * POST /api/diagnose
  * Upload a crop/leaf image (field name 'image') and receive AI diagnosis
  */
-router.post('/diagnose', aiRateLimit, (req, res) => {
+router.post('/diagnose', diagnoseRateLimit, (req, res) => {
   // Wrap multer middleware to handle upload validation errors gracefully
   upload.single('image')(req, res, async (err) => {
     if (err) {
@@ -112,9 +112,16 @@ router.post('/diagnose', aiRateLimit, (req, res) => {
       });
     } catch (error) {
       console.error('❌ Error during crop diagnosis:', error.message || error);
-      return res.status(500).json({
+      // 503 = provider outages/congestion (retryable), 500 = real bug.
+      // Sending 503 lets the UI say "busy, retry" instead of "our fault".
+      const isProviderIssue =
+        error.code === 'PROVIDER_TIMEOUT' ||
+        /timed out|429|50[23]|overload|busy|unavailable/i.test(error.message || '');
+      return res.status(isProviderIssue ? 503 : 500).json({
         success: false,
-        error: error.message || 'Internal server error while diagnosing crop image.',
+        error: isProviderIssue
+          ? 'All AI providers are busy right now — please try again in a few seconds.'
+          : (error.message || 'Internal server error while diagnosing crop image.'),
       });
     }
   });

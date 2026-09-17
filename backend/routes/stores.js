@@ -27,19 +27,39 @@ router.get('/stores', async (req, res) => {
       out body 5;
     `;
 
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-        'User-Agent': 'KisanMitra/1.0 (Contact: admin@kisanmitra.local)'
-      },
-      body: 'data=' + encodeURIComponent(overpassQuery)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Overpass API error: ${response.status}`);
+    // H2: hard timeout + mirror failover — the main Overpass instance is
+    // often rate-limited (406) or congested (504); the mirrors share the
+    // load. kumi.systems is official; private.coffee is a well-known
+    // community instance. 20s windows: Overpass radius queries are slow.
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter',
+    ];
+    let response = null;
+    let lastErr = null;
+    for (const endpoint of endpoints) {
+      try {
+        const attempt = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'User-Agent': 'KisanMitra/1.0 (Contact: admin@kisanmitra.local)'
+          },
+          body: 'data=' + encodeURIComponent(overpassQuery),
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (attempt.ok) {
+          response = attempt;
+          break;
+        }
+        lastErr = new Error(`Overpass API error: ${attempt.status}`);
+      } catch (err) {
+        lastErr = err;
+      }
     }
+    if (!response) throw lastErr || new Error('Overpass unavailable');
 
     const data = await response.json();
     
@@ -75,7 +95,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
             Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return (R * c).toFixed(1);
+  return R * c; // km (number — formatting is the UI's job) (L7)
 }
 
 module.exports = router;

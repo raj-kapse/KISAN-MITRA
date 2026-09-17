@@ -26,3 +26,4 @@ test-images/
 
 # Local scan-history fallback store (per-machine data)
 backend/data/
+.freebuff/

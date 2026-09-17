@@ -75,6 +75,12 @@ app.use('/api', transcribeRoutes);
 app.use('/api', ttsRoutes);
 app.use('/api', profileRoutes);
 
+// M7: JSON 404 for unknown API routes — Express's default HTML 404 broke
+// the frontend's `res.json().catch()` error contract.
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, error: `Unknown API endpoint: ${req.method} ${req.originalUrl}` });
+});
+
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);

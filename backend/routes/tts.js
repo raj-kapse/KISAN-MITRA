@@ -10,7 +10,7 @@
 // header so every browser can play it with a plain <audio> element.
 
 const express = require('express');
-const { aiRateLimit } = require('../middleware/rateLimit');
+const { ttsRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
 const TTS_MODEL = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
@@ -39,7 +39,7 @@ function pcmToWav(pcmBuffer, sampleRate = 24000, channels = 1, bitsPerSample = 1
   return Buffer.concat([header, pcmBuffer]);
 }
 
-router.post('/tts', aiRateLimit, async (req, res) => {
+router.post('/tts', ttsRateLimit, async (req, res) => {
   const { text, lang } = req.body || {};
 
   if (!text || typeof text !== 'string' || !text.trim()) {

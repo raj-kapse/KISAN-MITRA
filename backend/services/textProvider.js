@@ -16,7 +16,12 @@ const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
 const GEMINI_TEXT_MODEL = 'gemini-3.6-flash';
 const PROVIDER_TIMEOUT_MS = Number(process.env.PROVIDER_TIMEOUT_MS) || 15000;
 
-/** Reject if a provider call exceeds `ms` — chat/advisory must not hang. */
+/**
+ * Reject if a provider call exceeds PROVIDER_TIMEOUT_MS — chat/advisory
+ * must not hang. (L8: same shape as gemini.js's withTimeout, which takes an
+ * explicit `ms` — these live in different modules on purpose: textProvider
+ * uses one shared env-tunable, while the vision chain tunes per provider.)
+ */
 function withTimeout(promise, label) {
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
@@ -52,7 +57,9 @@ async function groqChat(messages, systemContext) {
           content: m.content,
         })),
       ],
-      max_tokens: 500,
+      // 500 tokens truncated longer Marathi/Hindi advisories mid-sentence.
+      // 1200 keeps full answers within the free-tier speed envelope.
+      max_tokens: 1200,
       temperature: 0.7,
     }),
   });

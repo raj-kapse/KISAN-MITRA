@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { chatComplete } = require('../services/textProvider');
-const { aiRateLimit } = require('../middleware/rateLimit');
+const { advisoryRateLimit } = require('../middleware/rateLimit');
 
 /**
  * POST /api/weather-advisory
  * Requires { diagnosis, weather, lang }
  */
-router.post('/weather-advisory', aiRateLimit, async (req, res) => {
+router.post('/weather-advisory', advisoryRateLimit, async (req, res) => {
   try {
     const { diagnosis, weather, lang } = req.body;
     
@@ -15,9 +15,11 @@ router.post('/weather-advisory', aiRateLimit, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing diagnosis or weather data' });
     }
 
-    const langLine = (lang || 'en') === 'hi'
+    const langLine = lang === 'hi'
       ? 'Respond strictly in Hindi (Devanagari script).'
-      : 'Respond in English.';
+      : lang === 'mr'
+        ? 'Respond strictly in Marathi (Devanagari script).'
+        : 'Respond in English.';
     const { text: advice, provider } = await chatComplete(
       [
         {

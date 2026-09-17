@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import './Chatbot.css';
-import { API_BASE } from '../api';
+import { API_BASE, speakViaServer } from '../api';
 
 /**
  * Transcribe a recorded audio Blob via /api/transcribe (Groq Whisper).
@@ -10,7 +10,7 @@ async function transcribeAudio(blob) {
   const form = new FormData();
   form.append('audio', blob, `recording.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`);
 
-  const res = await fetch(`${API_BASE}/api/transcribe`, { method: 'POST', body: form });
+  const res = await fetch(`${API_BASE}/api/transcribe`, { method: 'POST', body: form, signal: AbortSignal.timeout(45000) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     throw new Error(data.error || `Transcription failed (${res.status})`);
@@ -49,7 +49,7 @@ function Chatbot({ diagnosis, lang }) {
         hi: 'नमस्ते! मैं आपका किसान मित्र AI सहायक हूँ। आप अपनी फसल की रिपोर्ट या किसी भी कृषि समस्या के बारे में मुझसे पूछ सकते हैं।',
         mr: 'नमस्कार! मी तुमचा शेतकरी मित्र AI सहाय्यक आहे. तुमच्या पिकाच्या रिपोर्टबद्दल किंवा कोणत्याही शेती समस्येबद्दल मला विचारू शकता.',
       };
-      setMessages([{ role: 'model', content: greetings[lang] || greetings.en }]);
+      setMessages([{ role: 'model', content: greetings[lang] || greetings.en, isGreeting: true }]);
     }
   }, [isOpen, messages.length, lang]);
 
@@ -72,17 +72,36 @@ function Chatbot({ diagnosis, lang }) {
     setIsOpen(!isOpen);
   };
 
-  /** Speak a chatbot reply aloud (voice turns only). */
-  const speakReply = (text) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    // Strip markdown emphasis so it isn't read out
+  /** Speak a chatbot reply aloud (voice turns only). Uses the server TTS
+   * fallback when the device has no speech voices (M5). */
+  const speakReply = async (text) => {
     const clean = text.replace(/[*_#`]/g, '');
-    const utterance = new SpeechSynthesisUtterance(clean);
-    // Devanagari languages share hi-IN voices when mr-IN is unavailable
-    utterance.lang = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
-    utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
+    const tag = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+    const voices = window.speechSynthesis?.getVoices?.() || [];
+    const base = tag.split('-')[0];
+    const hasVoice = voices.some((v) => v.lang.toLowerCase().startsWith(base));
+
+    if (window.speechSynthesis && hasVoice) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(clean);
+      // Devanagari languages share hi-IN voices when mr-IN is unavailable
+      utterance.lang = tag;
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+      return;
+    }
+
+    // Voice-less device: server Gemini TTS → WAV (same fallback as Read Aloud)
+    try {
+      const blob = await speakViaServer(clean.slice(0, 2000), lang);
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch {
+      /* speech is best-effort on voice turns — silent skip is fine */
+    }
   };
 
   const sendMessage = async (textOverride = null) => {
@@ -97,6 +116,14 @@ function Chatbot({ diagnosis, lang }) {
     setMessages(newMessages);
     setInput('');
     setLoading(true);
+
+    // C3: notes (mic-permission warnings) and the cosmetic greeting must
+    // never go to the AI as conversation history; cap history so the
+    // payload stays small on slow rural networks.
+    const history = newMessages
+      .filter((m) => !m.isNote && !m.isGreeting)
+      .slice(-20)
+      .map(({ role, content }) => ({ role, content }));
 
     try {
       // Build context from diagnosis if it exists
@@ -114,9 +141,10 @@ function Chatbot({ diagnosis, lang }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: newMessages,
+          messages: history,
           context: context
-        })
+        }),
+        signal: AbortSignal.timeout(30000),
       });
 
       // Surface server-provided messages (rate limit wait, provider busy)

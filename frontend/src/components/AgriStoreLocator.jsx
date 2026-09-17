@@ -123,7 +123,7 @@ function AgriStoreLocator({ lang }) {
           {stores.slice(0, 3).map((store) => (
             <li key={store.id} className="store-item">
               <div className="store-name">{store.name}</div>
-              <div className="store-distance">{store.distance} km {L.away}</div>
+              <div className="store-distance">{Number(store.distance).toFixed(1)} km {L.away}</div>
             </li>
           ))}
         </ul>

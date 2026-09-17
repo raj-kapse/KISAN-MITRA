@@ -34,7 +34,10 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
   }, [lang]);
 
-  if (!diagnosis || !window.speechSynthesis) return null;
+  // Render whenever there's a diagnosis (C5). The browser-speech capability
+  // is checked inside the handler — hiding the button here would make the
+  // server-TTS fallback unreachable on voice-less browsers.
+  if (!diagnosis) return null;
 
   /** Does the browser have any voice for this language (or a close match)? */
   const hasVoicesFor = (tag) => {

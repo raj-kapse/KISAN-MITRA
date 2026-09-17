@@ -79,8 +79,16 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
 
   const displayName = pick(disease_name, disease_name_hi, disease_name_mr);
   const displayDesc = pick(description, description_hi, description_mr);
-  const steps = pick(next_steps, next_steps_hi, next_steps_mr) || [];
-  const tips = pick(extra_tips, extra_tips_hi, extra_tips_mr) || [];
+  // H7: the LLM sometimes returns a single string where the prompt asks for
+  // an array (or vice versa). Normalise so `.map` can never crash the view.
+  const toArray = (v) => {
+    if (Array.isArray(v)) return v.filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return [v.trim()];
+    return [];
+  };
+  const steps = toArray(pick(next_steps, next_steps_hi, next_steps_mr));
+  const tips = toArray(pick(extra_tips, extra_tips_hi, extra_tips_mr));
+  const symptomsList = toArray(symptoms);
 
   const chemText = treatment ? pick(treatment.chemical, treatment.chemical_hi, treatment.chemical_mr) : null;
   const orgText = treatment ? pick(treatment.organic, treatment.organic_hi, treatment.organic_mr) : null;
@@ -132,11 +140,11 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
       )}
 
       {/* Symptoms */}
-      {symptoms && symptoms.length > 0 && (
+      {symptomsList.length > 0 && (
         <div className="diagnosis-section">
           <h4>{L.symptoms}</h4>
           <ul className="symptoms-list">
-            {symptoms.map((s, i) => (
+            {symptomsList.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
           </ul>
@@ -207,7 +215,7 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
         <button
           className="action-btn whatsapp-btn"
           onClick={() => {
-            const text = `🌾 Kisan Mitra Report\nCrop: ${crop_type || 'Unknown'}\nDiagnosis: ${displayName}\nConfidence: ${confPercent}%\n\nAdvice:\n${displayDesc}`;
+            const text = `🌾 Kisan Mitra Report\nCrop: ${crop_type || 'Unknown'}\nDiagnosis: ${displayName}\nConfidence: ${confPercent}%\n${!isHealthy && severity ? `Severity: ${sevInfo.label}\n` : ''}\nAdvice:\n${displayDesc || ''}\n\nSteps:\n${steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}${chemText ? `\n\nChemical treatment: ${chemText}` : ''}${orgText ? `\nOrganic treatment: ${orgText}` : ''}${prevText ? `\nPrevention: ${prevText}` : ''}\n\n— shared via Kisan Mitra app`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
           }}
         >

@@ -98,6 +98,11 @@ function App() {
   // requests are discarded so a slow old scan can't overwrite fresh state.
   const diagnoseRequestIdRef = useRef(0);
 
+  // H4: last resolved location from the weather panel — geotags history
+  // saves. Reset per scan so an old location never sticks to a new one.
+  const [lastLocation, setLastLocation] = useState(null);
+  const handleLocationResolved = useCallback((loc) => setLastLocation(loc), []);
+
   // Free the previous blob URL whenever a new one is created or the app
   // resets — object URLs pin the image bytes in memory until revoked.
   useEffect(() => {
@@ -126,6 +131,7 @@ function App() {
     setLoading(true);
     setError(null);
     setDiagnosis(null);
+    setLastLocation(null); // fresh scan → fresh geotag
 
     // Guard against stale responses: only the latest request may write state
     const requestId = ++diagnoseRequestIdRef.current;
@@ -136,8 +142,9 @@ function App() {
       if (result.success && result.diagnosis) {
         setDiagnosis(result.diagnosis);
         // Fire-and-forget save to history (don't block the UI),
-        // tagged with the farmer's profile when signed in
-        saveScanHistory(result.diagnosis, null, profile).catch(err =>
+        // tagged with the farmer's profile when signed in and the
+        // location resolved by the weather panel when available
+        saveScanHistory(result.diagnosis, lastLocation, profile).catch(err =>
           console.warn('History save skipped:', err.message)
         );
       } else {
@@ -281,7 +288,7 @@ function App() {
                 
                 <VoiceButton diagnosis={diagnosis} lang={lang} />
                 <DiagnosisResult diagnosis={diagnosis} lang={lang} />
-                <WeatherAdvisory lang={lang} diagnosis={diagnosis} />
+                <WeatherAdvisory lang={lang} diagnosis={diagnosis} onLocationResolved={handleLocationResolved} />
                 <button className="scan-again-btn btn-3d-outline" onClick={handleScanAgain}>
                   {lang === 'hi' ? 'दूसरी फसल स्कैन करें' : lang === 'mr' ? 'दुसरे पीक स्कॅन करा' : 'Scan Another Crop'}
                 </button>

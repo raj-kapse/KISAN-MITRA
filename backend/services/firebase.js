@@ -95,13 +95,17 @@ async function saveScan(scan) {
  * @param {string|null} deviceId — when set, only scans saved by this device are returned
  * @returns {Array} — array of scan objects
  */
-async function getRecentScans(limit = 20, deviceId = null) {
+async function getRecentScans(limit = 20, deviceId = null, profileId = null) {
   const firestore = getDb();
   if (!firestore) return [];
 
   try {
     let query = firestore.collection('scans');
-    if (deviceId) {
+    // H5: filter server-side. Filtering client-side AFTER limit() returned
+    // fewer rows than the user's own scans, so profile history under-fetched.
+    if (profileId) {
+      query = query.where('profileId', '==', profileId);
+    } else if (deviceId) {
       // Requires the automatic single-field index on deviceId + manual ordering
       query = query.where('deviceId', '==', deviceId);
     }

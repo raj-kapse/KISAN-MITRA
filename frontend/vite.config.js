@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'samples/*.jpg'],
+      includeAssets: ['favicon.svg', 'icon-192.png', 'samples/*.jpg'], // L4: apple-touch-icon.png never existed
       manifest: {
         name: 'Kisan Mitra AI',
         short_name: 'Kisan Mitra',

@@ -221,11 +221,13 @@ async function geocodeWithFallback(query, apiKey) {
             provider: 'openweathermap',
           };
         }
-        throw new Error('not found');
+        const err = new Error('city not found in OpenWeatherMap geocoder');
+        err.code = 'NOT_FOUND'; // M1: coded errors — message matching is brittle
+        throw err;
       }
       console.warn(`⚠️ geocode [openweathermap] failed: ${res.status} — falling back to Open-Meteo`);
     } catch (err) {
-      if (err.message !== 'not found') {
+      if (err.code !== 'NOT_FOUND') {
         console.warn(`⚠️ geocode [openweathermap] failed: ${err.message} — falling back to Open-Meteo`);
       }
     }

@@ -7,9 +7,14 @@
 
 const express = require('express');
 const { loginOrRegister, getByPhone } = require('../services/profileStore');
+const { createRateLimiter } = require('../middleware/rateLimit');
 const router = express.Router();
 
-router.post('/profile/login', (req, res) => {
+// H8: login/hydration are unauthenticated by design — a rate limit is the
+// only brake on enumeration or brute forcing here. 10/min per IP.
+const profileRateLimit = createRateLimiter('profile', 10, 60_000);
+
+router.post('/profile/login', profileRateLimit, (req, res) => {
   try {
     const { phone, name } = req.body || {};
     const profile = loginOrRegister(phone, name);
@@ -27,7 +32,7 @@ router.post('/profile/login', (req, res) => {
   }
 });
 
-router.get('/profile', (req, res) => {
+router.get('/profile', profileRateLimit, (req, res) => {
   const profile = getByPhone(req.query.phone);
   if (!profile) {
     return res.status(404).json({ success: false, error: 'No profile found for this phone.' });

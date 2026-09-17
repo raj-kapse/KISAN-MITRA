@@ -184,13 +184,123 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   }
   cleanedText = cleanedText.trim();
 
-  try {
-    const parsedData = JSON.parse(cleanedText);
-    return parsedData;
-  } catch (parseError) {
-    console.error('Failed to parse Gemini response as JSON. Raw response:', responseText);
-    throw new Error(`Invalid JSON returned by Gemini: ${parseError.message}`);
+  return parseAndNormaliseDiagnosis(cleanedText, responseText);
+}
+
+/**
+ * Parse the model's JSON and normalise the shape-drift modes actually
+ * observed in the wild, so one drifting field can't discard an otherwise
+ * good diagnosis:
+ *   1. Early root close — the model closes the root object while fields are
+ *      still coming (seen when it mishandles the nested "treatment" object),
+ *      which makes JSON.parse reject the whole response.
+ *   2. "preventive" fields landing at the root instead of inside "treatment".
+ *   3. Array fields (symptoms/next_steps/extra_tips) arriving as one string.
+ */
+function parseAndNormaliseDiagnosis(cleanedText, rawText) {
+  const candidates = [cleanedText];
+
+  // Repair 1: brace-balance repair. The model sometimes closes the nested
+  // "treatment" object early and keeps emitting fields ("organic",
+  // "preventive", ...) — which produces one stray `}` per drifted group
+  // and rejects the whole response. Find every `}` that closes the ROOT
+  // object while more content follows, drop the ones with no matching
+  // open brace before them, and re-parse.
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  let repaired = '';
+  let dropped = 0;
+  for (let i = 0; i < cleanedText.length; i++) {
+    const ch = cleanedText[i];
+    if (inStr) {
+      repaired += ch;
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; repaired += ch; continue; }
+    if (ch === '{' || ch === '[') {
+      depth += 1;
+      repaired += ch;
+      continue;
+    }
+    if (ch === '}' || ch === ']') {
+      if (depth === 1 && ch === '}') {
+        // A `}` reaching root depth only belongs to the root CLOSE if
+        // everything after it is whitespace. If more content follows, it's
+        // a stray brace from the treatment-object drift — drop it.
+        const rest = cleanedText.slice(i + 1).trimStart();
+        if (rest.length > 0) { dropped += 1; continue; } // no depth change: brace removed
+      }
+      depth -= 1;
+      repaired += ch;
+      continue;
+    }
+    repaired += ch;
   }
+  if (dropped > 0) candidates.push(repaired);
+
+  // Repair 2 (belt & braces): if the first `}`-closes-root happened while
+  // fields were still being emitted, splice the remainder back inside.
+  let d2 = 0, s2 = false, e2 = false;
+  for (let i = 0; i < cleanedText.length; i++) {
+    const ch = cleanedText[i];
+    if (s2) {
+      if (e2) e2 = false;
+      else if (ch === '\\') e2 = true;
+      else if (ch === '"') s2 = false;
+      continue;
+    }
+    if (ch === '"') { s2 = true; continue; }
+    if (ch === '{' || ch === '[') d2 += 1;
+    else if (ch === '}' || ch === ']') {
+      d2 -= 1;
+      if (d2 === 0) {
+        const rest = cleanedText.slice(i + 1).trimStart();
+        if (rest.startsWith(',')) {
+          const tail = rest.replace(/^,\s*/, '');
+          candidates.push(`${cleanedText.slice(0, i)},${tail}`);
+        }
+        break;
+      }
+    }
+  }
+
+  let parsed = null;
+  let lastErr = null;
+  for (const candidate of candidates) {
+    try {
+      parsed = JSON.parse(candidate);
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    console.error('Failed to parse diagnosis JSON. Raw response:', rawText);
+    throw new Error(`Invalid JSON returned by Gemini: ${lastErr?.message || 'unknown parse error'}`);
+  }
+
+  // Repair 3: treatment sub-fields (organic/preventive) drifting to the
+  // root instead of staying inside the nested object.
+  const t = parsed.treatment;
+  if (t && typeof t === 'object') {
+    for (const key of ['chemical', 'organic', 'preventive', 'chemical_hi', 'chemical_mr', 'organic_hi', 'organic_mr', 'preventive_hi', 'preventive_mr']) {
+      if (t[key] == null && parsed[key] != null) {
+        t[key] = parsed[key];
+        delete parsed[key];
+      }
+    }
+  }
+
+  // Repair 4: array fields sent as a single string
+  for (const key of ['symptoms', 'next_steps', 'next_steps_hi', 'next_steps_mr', 'extra_tips', 'extra_tips_hi', 'extra_tips_mr']) {
+    if (typeof parsed[key] === 'string') parsed[key] = [parsed[key]];
+  }
+
+  return parsed;
 }
 
 /**
@@ -238,7 +348,10 @@ async function groqVisionDiagnose(base64Image, mimeType) {
         ],
       }],
       response_format: { type: 'json_object' },
-      max_tokens: 1200,
+      // The prompt mandates ~25 fields across 3 languages — a tight cap
+      // truncates mid-JSON, the parse fails, and a successful generation
+      // is thrown away (C4). 4000 leaves comfortable headroom.
+      max_tokens: 4000,
       temperature: 0.2,
     }),
   });

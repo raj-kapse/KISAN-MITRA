@@ -9,7 +9,7 @@
 
 const express = require('express');
 const multer = require('multer');
-const { aiRateLimit } = require('../middleware/rateLimit');
+const { transcribeRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
 const GROQ_TRANSCRIBE_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
@@ -35,7 +35,7 @@ const upload = multer({
   },
 });
 
-router.post('/transcribe', aiRateLimit, (req, res) => {
+router.post('/transcribe', transcribeRateLimit, (req, res) => {
   upload.single('audio')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
@@ -84,7 +84,14 @@ router.post('/transcribe', aiRateLimit, (req, res) => {
       const form = new FormData();
       form.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), filename);
       form.append('model', GROQ_MODEL);
-      form.append('language', 'hi'); // bias to Hindi; English words still transcribe fine
+      // H6: the app serves farmers across languages — forcing language 'hi'
+      // biased every transcription to Hindi. Let Whisper auto-detect instead
+      // (it is excellent at it for ≤1-minute clips). An explicit ?language=
+      // query param (validated) keeps manual override possible.
+      const requestedLang = (req.query.language || '').toString().trim().toLowerCase();
+      if (/^[a-z]{2}$/.test(requestedLang)) {
+        form.append('language', requestedLang);
+      }
       form.append('response_format', 'json');
       form.append('temperature', '0');
 

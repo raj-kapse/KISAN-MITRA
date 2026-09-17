@@ -71,11 +71,14 @@ async function saveScan(scan) {
       createdAt: scan.timestamp || new Date().toISOString(),
     };
     scans.unshift(entry);
-    // Trim to MAX_SCANS, keeping the newest (unshifted) entries; drop entries
-    // with no deviceId last so shared scans aren't lost first
+    // Trim to MAX_SCANS total (M2): the old code kept up to MAX + MAX/10
+    // entries because the two slices were concatenated. Keep the newest
+    // 50 device-tagged scans plus the newest remainder, but never exceed
+    // the cap.
     const withDevice = scans.filter(s => s.deviceId);
     const withoutDevice = scans.filter(s => !s.deviceId);
-    const kept = [...withDevice.slice(0, MAX_SCANS), ...withoutDevice.slice(0, Math.floor(MAX_SCANS / 10))];
+    const keptWithDevice = withDevice.slice(0, Math.floor(MAX_SCANS * 0.9));
+    const kept = [...keptWithDevice, ...withoutDevice.slice(0, MAX_SCANS - keptWithDevice.length)];
     writeScans(kept);
     return entry.id;
   } catch (err) {
@@ -91,9 +94,9 @@ async function saveScan(scan) {
  */
 async function getRecentScans(limit = 20, deviceId = null, profileId = null) {
   if (isFirebaseReady()) {
-    const scans = await getFromFirestore(limit, profileId ? null : deviceId);
+    const scans = await getFromFirestore(limit, deviceId, profileId);
     if (scans !== null) {
-      return profileId ? scans.filter(s => s.profileId === profileId).slice(0, limit) : scans;
+      return scans; // profile/device filtering now happens server-side (H5)
     }
     console.warn('⚠️ Firestore read failed — falling back to local scan store');
   }
