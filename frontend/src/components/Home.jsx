@@ -15,7 +15,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ScanLine, History, MessageCircle, CloudSun, MapPin,
-  Sprout, AlertTriangle, ArrowRight,
+  Sprout, AlertTriangle, ArrowRight, ChevronRight,
 } from 'lucide-react';
 import { getWeather, geocodeCity } from '../api';
 import { WeatherIcon } from '../utils/weatherIcons';
@@ -40,11 +40,11 @@ const T = {
   advisory: { en: 'Advisory', hi: 'सलाह', mr: 'सल्ला' },
   recent: { en: 'Recent scans', hi: 'हाल के स्कैन', mr: 'अलीकडील स्कॅन' },
   seeAll: { en: 'See all', hi: 'सभी देखें', mr: 'सर्व पहा' },
-  emptyTitle: { en: 'No scans yet', hi: 'अभी कोई स्कैन नहीं', mr: 'अजून स्कॅन नाही' },
+  emptyTitle: { en: 'No scans yet', hi: 'अभी कोई स्कैन नहीं', mr: 'अजून कोणताही स्कॅन नाही' },
   emptyDesc: {
-    en: 'Tap "Scan a Crop" to begin.',
-    hi: 'शुरू करने के लिए "फसल स्कैन करें" दबाएँ।',
-    mr: 'सुरू करण्यासाठी "पीक स्कॅन करा" दाबा.',
+    en: 'Your recent diagnoses will appear here.',
+    hi: 'आपके हाल के निदान यहाँ दिखेंगे।',
+    mr: 'तुमचे अलीकडचे निदान येथे दिसतील.',
   },
   scanCta: { en: 'Scan a Crop', hi: 'फसल स्कैन करें', mr: 'पीक स्कॅन करा' },
   scanHelper: {
@@ -56,24 +56,24 @@ const T = {
   unknown: { en: 'Unknown', hi: 'अज्ञात', mr: 'अज्ञात' },
 };
 
-/** Mini confidence ring for a history row. */
+/** Mini confidence ring for a recent-scan row (36px, tier-coloured). */
 function RecentRing({ percent, tier }) {
-  const RADIUS = 12;
+  const RADIUS = 14.5;
   const CIRC = 2 * Math.PI * RADIUS;
   const offset = CIRC * (1 - Math.min(Math.max(percent, 0), 100) / 100);
   return (
     <span className={`home-ring home-ring-${tier}`} aria-label={`${percent}%`}>
-      <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
-        <circle className="home-ring-track" cx="16" cy="16" r={RADIUS} fill="none" strokeWidth="3.5" />
+      <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+        <circle className="home-ring-track" cx="18" cy="18" r={RADIUS} fill="none" strokeWidth="3.5" />
         <circle
           className="home-ring-fill"
-          cx="16" cy="16" r={RADIUS} fill="none" strokeWidth="3.5"
+          cx="18" cy="18" r={RADIUS} fill="none" strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={CIRC}
           strokeDashoffset={offset}
-          transform="rotate(-90 16 16)"
+          transform="rotate(-90 18 18)"
         />
-        <text className="home-ring-num" x="16" y="20" textAnchor="middle">{percent}</text>
+        <text className="home-ring-num" x="18" y="22" textAnchor="middle">{percent}</text>
       </svg>
     </span>
   );
@@ -293,7 +293,7 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
 
         {!scansLoading && hasScans && (
           <ul className="home-recent-list">
-            {recentScans.map((scan) => {
+            {recentScans.map((scan, index) => {
               const d = scan.diagnosis || {};
               const healthy = isHealthyScan(d);
               const confPercent = Math.round((d.confidence || 0) * 100);
@@ -302,14 +302,18 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
               const when = relativeTime(scan.createdAt || scan.timestamp, locale);
 
               return (
-                <li key={scan.id}>
+                <li
+                  key={scan.id}
+                  className="home-recent-li"
+                  style={{ animationDelay: `${index * 0.08}s` }}
+                >
                   <button
                     type="button"
                     className="home-recent-item glass-panel"
                     onClick={() => onOpenScan(scan)}
                   >
                     <span className={`home-recent-icon tone-${tone}`} aria-hidden="true">
-                      {healthy ? <Sprout size={20} /> : <AlertTriangle size={20} />}
+                      {healthy ? <Sprout size={22} /> : <AlertTriangle size={22} />}
                     </span>
                     <span className="home-recent-text">
                       <span className="home-recent-name">
@@ -317,10 +321,12 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
                       </span>
                       <span className="home-recent-meta">
                         {d.crop_type && <span className="home-recent-crop">{d.crop_type}</span>}
+                        {d.crop_type && when ? ' · ' : ''}
                         {when && <span className="home-recent-when">{when}</span>}
                       </span>
                     </span>
                     <RecentRing percent={confPercent} tier={confidenceTier(confPercent)} />
+                    <ChevronRight size={12} className="home-recent-chevron" aria-hidden="true" />
                   </button>
                 </li>
               );
@@ -329,13 +335,12 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
         )}
 
         {!scansLoading && !hasScans && (
-          <div className="home-empty glass-panel">
+          <div className="home-empty">
+            <span className="home-empty-icon" aria-hidden="true">
+              <Sprout size={26} />
+            </span>
             <p className="home-empty-title">{t('emptyTitle')}</p>
             <p className="home-empty-desc">{t('emptyDesc')}</p>
-            <button type="button" className="home-empty-cta" onClick={() => onNavigate('scan')}>
-              <ScanLine size={20} aria-hidden="true" />
-              {t('scanCta')}
-            </button>
           </div>
         )}
       </section>
