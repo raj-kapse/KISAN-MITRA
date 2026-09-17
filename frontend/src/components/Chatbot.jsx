@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { MessageCircle, X, Mic, Send, Square } from 'lucide-react';
 import './Chatbot.css';
 import { API_BASE, speakViaServer } from '../api';
 
@@ -27,6 +28,8 @@ function Chatbot({ diagnosis, lang }) {
   // Voice input state: 'idle' | 'recording' | 'transcribing'
   const [voiceState, setVoiceState] = useState('idle');
   const [recordSeconds, setRecordSeconds] = useState(0);
+  // One-time FAB pulse ring when a diagnosis arrives while the chat is closed
+  const [pulseRing, setPulseRing] = useState(false);
 
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -40,6 +43,15 @@ function Chatbot({ diagnosis, lang }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Diagnose-arrival nudge: a single 8px pulse ring on the FAB
+  useEffect(() => {
+    if (diagnosis && !isOpen) {
+      setPulseRing(true);
+      const t = setTimeout(() => setPulseRing(false), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [diagnosis]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initial greeting
   useEffect(() => {
@@ -272,14 +284,41 @@ function Chatbot({ diagnosis, lang }) {
   };
 
   const isHi = lang === 'hi';
+  const chatText = {
+    title: { en: 'AI Assistant', hi: 'AI सहायक', mr: 'AI सहाय्यक' },
+    online: { en: 'Online', hi: 'ऑनलाइन', mr: 'ऑनलाइन' },
+    close: { en: 'Close chat', hi: 'चैट बंद करें', mr: 'चॅट बंद करा' },
+    mic: { en: 'Ask by voice', hi: 'बोलकर पूछें', mr: 'आवाजात विचारा' },
+    send: { en: 'Send', hi: 'भेजें', mr: 'पाठवा' },
+    sendAria: { en: 'Send message', hi: 'संदेश भेजें', mr: 'संदेश पाठवा' },
+    stopRec: { en: 'Stop recording', hi: 'रिकॉर्डिंग रोकें', mr: 'रेकॉर्डिंग थांबवा' },
+    cancelRec: { en: 'Cancel recording', hi: 'रिकॉर्डिंग रद्द करें', mr: 'रेकॉर्डिंग रद्द करा' },
+    transcribing: { en: 'Transcribing your voice…', hi: 'आवाज़ पहचान रहे हैं…', mr: 'आवाज ओळखत आहोत…' },
+    askPlaceholder: { en: 'Ask a question...', hi: 'कुछ पूछें...', mr: 'काही विचारा...' },
+    voiceHint: {
+      en: 'Tap the mic to ask by voice — the answer is read aloud.',
+      hi: 'माइक दबाकर हिंदी में बोलें — जवाब सुनाई देगा।',
+      mr: 'मायक दाबून विचारा — उत्तर ऐकायला मिळेल.',
+    },
+    openChat: { en: 'Open AI assistant', hi: 'AI सहायक खोलें', mr: 'AI सहाय्यक उघडा' },
+  };
+  const ct = (key) => chatText[key][lang] || chatText[key].en;
 
   return (
     <div className="chatbot-wrapper no-print">
       {isOpen && (
         <div className="chatbot-window">
           <div className="chatbot-header">
-            <h4>🤖 {isHi ? 'AI सहायक' : 'AI Assistant'}</h4>
-            <button onClick={toggleChat} className="close-chat-btn">✕</button>
+            <span className="chatbot-header-bot" aria-hidden="true">
+              <MessageCircle size={18} />
+            </span>
+            <div className="chatbot-header-meta">
+              <h4>{ct('title')}</h4>
+              <span className="chatbot-online"><span className="online-dot" aria-hidden="true" />{ct('online')}</span>
+            </div>
+            <button onClick={toggleChat} className="close-chat-btn" aria-label={ct('close')}>
+              <X size={18} aria-hidden="true" />
+            </button>
           </div>
 
           <div className="chatbot-messages">
@@ -297,7 +336,7 @@ function Chatbot({ diagnosis, lang }) {
             )}
             {voiceState === 'transcribing' && (
               <div className="chat-bubble user voice-pending">
-                {isHi ? '🎤 आवाज़ पहचान रहे हैं…' : '🎤 Transcribing your voice…'}
+                <span className="spinner" aria-hidden="true" /> {ct('transcribing')}
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -309,13 +348,16 @@ function Chatbot({ diagnosis, lang }) {
           >
             {voiceState === 'recording' ? (
               <div className="voice-recording-bar">
-                <span className="rec-dot" />
+                <span className="rec-dot" aria-hidden="true" />
                 <span className="rec-timer">{String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:{String(recordSeconds % 60).padStart(2, '0')}</span>
-                <button type="button" className="mic-btn send-rec" onClick={finishRecording} title={isHi ? 'भेजें' : 'Send'}>
-                  ➤
+                <span className="waveform" aria-hidden="true">
+                  {[0, 1, 2, 3, 4].map((i) => <span key={i} className="wave-bar" style={{ animationDelay: `${i * 0.12}s` }} />)}
+                </span>
+                <button type="button" className="mic-btn send-rec" onClick={finishRecording} title={ct('send')} aria-label={ct('stopRec')}>
+                  <Send size={16} aria-hidden="true" />
                 </button>
-                <button type="button" className="mic-btn cancel-rec" onClick={cancelRecording} title={isHi ? 'रद्द करें' : 'Cancel'}>
-                  ✕
+                <button type="button" className="mic-btn cancel-rec" onClick={cancelRecording} title={ct('cancelRec')} aria-label={ct('cancelRec')}>
+                  <Square size={14} aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -324,7 +366,7 @@ function Chatbot({ diagnosis, lang }) {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={isHi ? 'कुछ पूछें...' : 'Ask a question...'}
+                  placeholder={ct('askPlaceholder')}
                   disabled={loading || voiceState === 'transcribing'}
                 />
                 <button
@@ -332,27 +374,33 @@ function Chatbot({ diagnosis, lang }) {
                   className={`mic-btn ${voiceState === 'transcribing' ? 'busy' : ''}`}
                   onClick={startRecording}
                   disabled={loading || voiceState === 'transcribing'}
-                  title={isHi ? 'बोलकर पूछें' : 'Ask by voice'}
+                  title={ct('mic')}
+                  aria-label={ct('mic')}
                 >
-                  🎤
+                  <Mic size={18} aria-hidden="true" />
                 </button>
-                <button type="submit" disabled={!input.trim() || loading || voiceState !== 'idle'}>
-                  ➤
+                <button
+                  type="submit"
+                  className="send-btn"
+                  disabled={!input.trim() || loading || voiceState !== 'idle'}
+                  aria-label={ct('sendAria')}
+                >
+                  <Send size={16} aria-hidden="true" />
                 </button>
               </>
             )}
           </form>
           {voiceState === 'idle' && isOpen && (
             <div className="voice-hint">
-              {isHi ? 'माइक दबाकर हिंदी में बोलें — जवाब सुनाई देगा।' : 'Hold the mic to ask by voice — the answer is read aloud.'}
+              {ct('voiceHint')}
             </div>
           )}
         </div>
       )}
 
       {!isOpen && (
-        <button className="chatbot-fab" onClick={toggleChat}>
-          🤖
+        <button className={`chatbot-fab ${pulseRing ? 'pulse-ring' : ''}`} onClick={toggleChat} aria-label={ct('openChat')}>
+          <MessageCircle size={24} aria-hidden="true" />
         </button>
       )}
     </div>

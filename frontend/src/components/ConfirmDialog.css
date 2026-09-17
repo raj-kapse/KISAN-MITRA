@@ -1,0 +1,82 @@
+/* ConfirmDialog — centered modal, token surfaces */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 380;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: var(--color-overlay);
+  animation: toastIn 0.2s ease-out;
+}
+
+.confirm-card {
+  width: min(92vw, 22rem);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background: var(--color-status-severe-bg);
+  color: var(--color-status-severe);
+  margin-bottom: var(--space-md);
+}
+
+.confirm-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.confirm-body {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin-bottom: var(--space-lg);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.confirm-cancel,
+.confirm-accept {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.confirm-cancel {
+  background: var(--color-surface-tint);
+  color: var(--color-text);
+}
+
+.confirm-cancel:hover { background: var(--color-border); }
+
+.confirm-accept {
+  background: var(--color-status-severe);
+  color: var(--color-text-on-dark);
+}
+
+.confirm-accept:hover { background: var(--color-status-severe-strong); }
+
+.confirm-cancel:active,
+.confirm-accept:active { transform: scale(0.98); }

@@ -1,3 +1,5 @@
+/* CameraCapture — viewfinder, source buttons, samples */
+
 .camera-capture-container {
   display: flex;
   flex-direction: column;
@@ -5,24 +7,25 @@
   margin-bottom: var(--space-lg);
 }
 
-/* Viewfinder Motif */
+/* Viewfinder */
 .viewfinder-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background-color: var(--color-text); /* dark camera backdrop */
-  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-dark);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-md);
 }
 
 .corner {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-color: var(--color-text-on-dark);
+  width: 36px;
+  height: 36px;
+  border-color: rgba(245, 243, 238, 0.85);
   border-style: solid;
   z-index: 10;
   transition: all 0.3s ease;
@@ -33,236 +36,180 @@
   transform: scale(1.05);
 }
 
-.top-left {
-  top: 16px;
-  left: 16px;
-  border-width: 4px 0 0 4px;
-}
-.top-right {
-  top: 16px;
-  right: 16px;
-  border-width: 4px 4px 0 0;
-}
-.bottom-left {
-  bottom: 16px;
-  left: 16px;
-  border-width: 0 0 4px 4px;
-}
-.bottom-right {
-  bottom: 16px;
-  right: 16px;
-  border-width: 0 4px 4px 0;
-}
+.top-left { top: 14px; left: 14px; border-width: 3px 0 0 3px; }
+.top-right { top: 14px; right: 14px; border-width: 3px 3px 0 0; }
+.bottom-left { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; }
+.bottom-right { bottom: 14px; right: 14px; border-width: 0 3px 3px 0; }
 
 /* Scan line animation */
 .scan-line {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 4px;
-  background: var(--color-accent-cta);
-  box-shadow: 0 0 10px 2px var(--color-accent-cta);
-  opacity: 0.7;
-  z-index: 15;
-  animation: scan-sweep 2s ease-in-out infinite;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--color-accent-cta), transparent);
+  animation: scanSweep 2s ease-in-out infinite;
+  z-index: 5;
 }
 
-@keyframes scan-sweep {
-  0% { top: 0%; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+@keyframes scanSweep {
+  0% { top: 8%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
 }
 
-/* Internal elements */
+/* Empty state */
 .capture-placeholder {
-  color: var(--color-text-on-dark);
-  opacity: 0.85;
-  text-align: center;
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-medium);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-sm);
+  padding: var(--space-lg);
+  text-align: center;
 }
 
-.placeholder-icon {
-  font-size: 2.5rem;
-  opacity: 0.6;
+.capture-sprout { width: 72px; height: 72px; opacity: 0.95; }
+
+.placeholder-title {
+  color: var(--color-text-on-dark);
+  font-weight: var(--weight-semibold);
 }
 
-.camera-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* mirror effect if it's front-facing, but usually we request environment */
+.placeholder-hint {
+  color: rgba(245, 243, 238, 0.75);
+  font-size: var(--font-size-sm);
 }
 
-/* If environment facing, don't mirror */
-@media (pointer: coarse) {
-  .camera-video {
-    transform: none;
-  }
-}
-
+.camera-video,
 .preview-image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Actions */
+.blur-sm { filter: blur(3px); }
+
+.skeleton-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+}
+
+/* Action buttons */
 .capture-actions {
   display: flex;
   gap: var(--space-sm);
-  justify-content: center;
   align-items: center;
-  min-height: 60px;
+  justify-content: center;
 }
 
 .capture-btn {
-  min-height: 48px;
-  padding: var(--space-sm) var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 56px;
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
   font-family: inherit;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--weight-semibold);
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  color: var(--color-text);
-  background: transparent;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
+.capture-btn:active { transform: scale(0.97); }
+
 .capture-btn.primary {
-  /* Solid brand fill — no outline style (bright-sunlight rule) */
+  flex: 1.4;
   background: var(--color-primary);
   color: var(--color-text-on-dark);
 }
-.capture-btn.primary:active {
-  transform: scale(0.97);
-}
+
+.capture-btn.primary:hover { background: var(--color-primary-dark); }
 
 .capture-btn.upload {
+  flex: 1;
   background: var(--color-surface);
-  border: 2px solid var(--color-border-strong);
+  border: 1.5px solid var(--color-border-strong);
   color: var(--color-text);
+  cursor: pointer;
 }
-.capture-btn.upload:active {
-  background: var(--color-surface-tint);
-}
+
+.capture-btn.upload:hover { background: var(--color-surface-tint); }
+.capture-btn.upload.disabled { opacity: 0.6; }
 
 .capture-btn.secondary {
-  color: var(--color-text-light);
-  font-weight: var(--weight-semibold);
-  text-decoration: underline;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border-strong);
+  color: var(--color-text);
 }
 
-.capture-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.capture-btn.secondary:hover { background: var(--color-surface-tint); }
 
-/* Shutter Button */
 .capture-btn.shutter {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--color-text-on-dark);
-  border: 4px solid var(--color-border-strong);
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  width: 68px;
+  min-height: 68px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 4px solid var(--color-primary);
 }
 
 .shutter-inner {
-  width: 100%;
-  height: 100%;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
-  border-radius: 50%;
-  transition: transform 0.1s;
+  transition: transform 0.1s ease;
 }
 
-.capture-btn.shutter:active .shutter-inner {
-  transform: scale(0.9);
-  background: var(--color-primary-dark);
-}
+.capture-btn.shutter:active .shutter-inner { transform: scale(0.85); }
 
-/* Fail-safe Samples */
-.sample-images-section {
-  margin-top: var(--space-md);
-  text-align: center;
-}
+.capture-btn-ghost { width: 68px; flex-shrink: 0; }
+
+/* Samples */
+.sample-images-section { text-align: center; }
 
 .sample-title {
-  font-size: var(--font-size-xs);
-  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
   color: var(--color-text-light);
-  margin-bottom: var(--space-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
 }
 
 .sample-grid {
   display: flex;
-  gap: var(--space-sm);
   justify-content: center;
+  gap: var(--space-sm);
 }
 
 .sample-btn {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-sm);
-  border: 2px solid var(--color-border-strong);
+  width: 88px;
+  height: 66px;
   padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-  background: var(--color-surface-tint);
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, transform 0.12s ease;
 }
 
-.sample-btn:hover {
-  transform: scale(1.05);
-  border-color: var(--color-primary);
-}
-
-.sample-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
+.sample-btn:hover { border-color: var(--color-primary); transform: translateY(-2px); }
+.sample-btn:active { transform: scale(0.97); }
 
 .sample-btn img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.skeleton-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0.6;
-  z-index: 5;
-}
-
-.blur-sm {
-  filter: blur(4px);
-}
-
-.capture-btn {
-  box-shadow: var(--shadow-soft);
-  transition: all 0.2s ease;
-}
-
-.capture-btn:active {
-  transform: translateY(2px);
-  box-shadow: none;
+  display: block;
 }

@@ -4,8 +4,8 @@
   "description": "AI Crop Health & Advisory App for Indian farmers",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fefae0",
-  "theme_color": "#2d6a4f",
+  "background_color": "#F7F6F2",
+  "theme_color": "#2E5F3E",
   "orientation": "portrait-primary",
   "icons": [
     {

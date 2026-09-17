@@ -9,14 +9,22 @@
  *      silently fails
  *
  * Reads the diagnosis and treatment text aloud. Respects the current
- * language toggle (English / Hindi / Marathi).
+ * language toggle (English / Hindi / Marathi). TTS logic is untouched —
+ * only the chrome changed to Lucide icons.
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Volume2, Square } from 'lucide-react';
 import { speakViaServer } from '../api';
 import './VoiceButton.css';
 
 const LANG_TAGS = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' };
+
+const T = {
+  read: { en: 'Read Aloud', hi: 'आवाज़ में सुनें', mr: 'आवाजात ऐका' },
+  stop: { en: 'Stop', hi: 'रोकें', mr: 'थांबा' },
+  playError: { en: 'Could not play the audio.', hi: 'आवाज़ चलाने में समस्या।', mr: 'आवाज चालवण्यात समस्या.' },
+};
 
 function VoiceButton({ diagnosis, lang = 'en' }) {
   const [speaking, setSpeaking] = useState(false);
@@ -24,6 +32,8 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
   const audioRef = useRef(null);
   const urlRef = useRef(null);
   const cancelledRef = useRef(false);
+
+  const t = (key) => T[key][lang] || T[key].en;
 
   // Stop any playback and release the audio blob when the language changes
   // or the component unmounts.
@@ -34,7 +44,7 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
   }, [lang]);
 
-  // Render whenever there's a diagnosis (C5). The browser-speech capability
+  // Render whenever there's a diagnosis. The browser-speech capability
   // is checked inside the handler — hiding the button here would make the
   // server-TTS fallback unreachable on voice-less browsers.
   if (!diagnosis) return null;
@@ -72,10 +82,10 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
     if (desc) parts.push(desc);
 
     if (d.treatment && d.disease_name?.toLowerCase() !== 'healthy') {
-      const t = d.treatment;
-      const chem = pick(t.chemical, t.chemical_hi, t.chemical_mr);
-      const org = pick(t.organic, t.organic_hi, t.organic_mr);
-      const prev = pick(t.preventive, t.preventive_hi, t.preventive_mr);
+      const tr = d.treatment;
+      const chem = pick(tr.chemical, tr.chemical_hi, tr.chemical_mr);
+      const org = pick(tr.organic, tr.organic_hi, tr.organic_mr);
+      const prev = pick(tr.preventive, tr.preventive_hi, tr.preventive_mr);
       if (chem) parts.push(`${L.chem}: ${chem}`);
       if (org) parts.push(`${L.org}: ${org}`);
       if (prev) parts.push(`${L.prev}: ${prev}`);
@@ -113,7 +123,7 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
     // Tier 1: browser voices (instant, free). The voices list can load
     // asynchronously in Chrome, so a zero-length list is treated as
     // "unavailable" and we fall back rather than queueing into silence.
-    if (hasVoicesFor(tag)) {
+    if (synth && hasVoicesFor(tag)) {
       cancelledRef.current = false;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = tag;
@@ -121,6 +131,7 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
       utterance.pitch = 1;
       utterance.onend = () => setSpeaking(false);
       utterance.onerror = () => setSpeaking(false);
+
       setSpeaking(true);
       synth.speak(utterance);
       return;
@@ -146,23 +157,25 @@ function VoiceButton({ diagnosis, lang = 'en' }) {
         URL.revokeObjectURL(url);
         urlRef.current = null;
         setSpeaking(false);
-        setTtsError(lang === 'en' ? 'Could not play the audio.' : 'आवाज़ चलाने में समस्या।');
+        setTtsError(t('playError'));
       };
       await audio.play();
     } catch (err) {
       setSpeaking(false);
-      setTtsError(err.message || 'Speech unavailable.');
+      setTtsError(err.message || t('playError'));
     }
   };
 
   return (
-    <div className="voice-btn-wrap">
+    <div className="voice-btn-wrap no-print">
       <button
         className={`voice-btn ${speaking ? 'speaking' : ''}`}
         onClick={handleSpeak}
-        aria-label={speaking ? 'Stop reading' : 'Read aloud'}
+        aria-label={speaking ? t('stop') : t('read')}
       >
-        {speaking ? '⏹️ Stop' : '🔊 Read Aloud'}
+        {speaking
+          ? <><Square size={18} aria-hidden="true" /> {t('stop')}</>
+          : <><Volume2 size={18} aria-hidden="true" /> {t('read')}</>}
       </button>
       {ttsError && <small className="voice-error">{ttsError}</small>}
     </div>

@@ -14,7 +14,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CloudSun, MapPin, Sparkles, Info } from 'lucide-react';
 import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
+import { weatherIconFor } from './Home';
 import './WeatherAdvisory.css';
 
 function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
@@ -197,29 +199,34 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
     <div className={`weather-panel glass-panel ${weatherTheme}`}>
       <div className="weather-header">
         <h3>
+          <CloudSun size={18} aria-hidden="true" />
           {lang === 'hi' ? 'मौसम आधारित कृषि सलाह' : isMr ? 'हवामान आधारित कृषी सल्ला' : 'Weather-Driven Advisory'}
         </h3>
       </div>
 
       {/* Current conditions */}
-      {current && (
-        <div className="current-weather">
-          <div className="current-main">
-            <span className="current-temp">{current.temp}°C</span>
-            <div className="current-details">
-              <span>{current.description}</span>
-              {(current.city || manualCity?.name) && (
-                <span className="city-name">📍 {current.city || `${manualCity.name}${manualCity.state ? ', ' + manualCity.state : ''}`}</span>
-              )}
+      {current && (() => {
+        const CurrentIcon = weatherIconFor(current.description);
+        return (
+          <div className="current-weather">
+            <div className="current-main">
+              <CurrentIcon size={36} className="current-temp-icon" aria-hidden="true" />
+              <span className="current-temp">{current.temp}°C</span>
+              <div className="current-details">
+                <span>{current.description}</span>
+                {(current.city || manualCity?.name) && (
+                  <span className="city-name"><MapPin size={11} aria-hidden="true" /> {current.city || `${manualCity.name}${manualCity.state ? ', ' + manualCity.state : ''}`}</span>
+                )}
+              </div>
+            </div>
+            <div className="current-stats">
+              <span>💧 {current.humidity}%</span>
+              <span>🌡️ {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
+              {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
             </div>
           </div>
-          <div className="current-stats">
-            <span>💧 {current.humidity}%</span>
-            <span>🌡️ {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
-            {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 5-day forecast */}
       {forecast && forecast.length > 0 && (
@@ -241,12 +248,12 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
       {/* AI Combined Crop Advisory — falls back to rule-based tips on failure */}
       {aiAdvice ? (
         <div className="crop-advice ai-advice">
-          <h4>{isHi ? '🤖 AI फसल एवं मौसम सुझाव' : isMr ? '🤖 AI पीक व हवामान सल्ला' : '🤖 AI Crop & Weather Advisory'}</h4>
+          <h4><Sparkles size={16} aria-hidden="true" /> {isHi ? 'AI फसल एवं मौसम सुझाव' : isMr ? 'AI पीक व हवामान सल्ला' : 'AI Crop & Weather Advisory'}</h4>
           <p>{aiAdvice}</p>
         </div>
       ) : (
         <div className="crop-advice">
-          <h4>{isHi ? '🌾 सामान्य मौसम सुझाव' : isMr ? '🌾 सामान्य हवामान सल्ला' : '🌾 General Weather Advice'}</h4>
+          <h4><Info size={16} aria-hidden="true" /> {isHi ? 'सामान्य मौसम सुझाव' : isMr ? 'सामान्य हवामान सल्ला' : 'General Weather Advice'}</h4>
           {aiError && (
             <small className="manual-error" style={{ display: 'block', marginBottom: '0.35rem' }}>
               {isHi ? '(AI सलाह अभी उपलब्ध नहीं है — सामान्य सुझाव देखें)' : isMr ? '(AI सल्ला सध्या उपलब्ध नाही — सामान्य सल्ला पहा)' : '(AI advice unavailable right now — general tips shown)'}

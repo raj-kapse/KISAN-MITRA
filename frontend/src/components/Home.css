@@ -1,0 +1,298 @@
+/* Home dashboard */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.home-greeting h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.home-greeting p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+/* --- Weather mini-card --- */
+.home-weather {
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  min-height: 4.5rem;
+}
+
+.home-weather-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.home-weather-skel-temp {
+  width: 3.5rem;
+  height: 2.5rem;
+}
+
+.home-weather-skel-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.home-weather-skel-line {
+  height: 0.9rem;
+  width: 70%;
+}
+
+.home-weather-skel-line.short { width: 45%; }
+
+.home-weather-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-tint);
+  color: var(--color-text-light);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.home-weather-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-primary);
+}
+
+.home-weather-temp {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.home-weather-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  text-transform: capitalize;
+}
+
+.home-weather-strip {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.home-weather-day {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-light);
+}
+
+/* --- Quick actions --- */
+.home-section-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+  line-height: 1.7;
+}
+
+.home-quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.home-quick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 88px;
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.home-quick:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.home-quick:active { transform: scale(0.98); }
+
+/* --- Recent scans --- */
+.home-recent-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.home-see-all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.home-recent-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.home-recent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.home-recent-item:hover { transform: translateY(-1px); }
+.home-recent-item:active { transform: scale(0.99); }
+
+.home-recent-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
+.home-recent-icon.healthy {
+  background: var(--color-status-healthy-bg);
+  color: var(--color-status-healthy-strong);
+}
+
+.home-recent-icon.diseased {
+  background: var(--color-status-moderate-bg);
+  color: var(--color-status-moderate-strong);
+}
+
+.home-recent-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.home-recent-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-recent-crop {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  text-transform: capitalize;
+}
+
+.home-recent-skel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: 64px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.home-recent-skel-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.home-recent-skel-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.home-recent-skel-line { height: 0.85rem; width: 65%; }
+.home-recent-skel-line.short { width: 40%; }
+
+/* --- Empty state --- */
+.home-empty {
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+}
+
+.home-empty-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.home-empty-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin: var(--space-sm) 0 var(--space-lg);
+}
+
+.home-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-cta);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.home-empty-cta:hover { background: var(--color-accent-cta-press); }
+.home-empty-cta:active { transform: scale(0.98); }

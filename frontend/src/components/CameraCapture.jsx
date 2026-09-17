@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import { Camera, Upload, ImagePlus, FlaskConical, RotateCcw, ScanSearch } from 'lucide-react';
+import { showToast } from './Toast';
 import './CameraCapture.css';
 
 /**
  * Downscale + compress an image file client-side via canvas.
  * Caps the longest edge at 1024px and re-encodes as JPEG q0.85.
  * Shrinks typical phone photos 5-10x — faster uploads on rural
- * bandwidth and a smaller Gemini payload. Returns the original
+ * bandwidth and a smaller AI payload. Returns the original
  * file untouched if it is already small enough.
  */
 async function compressImage(file) {
@@ -43,14 +44,65 @@ async function compressImage(file) {
   }
 }
 
+const T = {
+  ready: {
+    en: 'Ready to scan a crop leaf',
+    hi: 'फसल की पत्ती स्कैन के लिए तैयार',
+    mr: 'पिकाच्या पानाच्या स्कॅनसाठी तयार',
+  },
+  readyHint: {
+    en: 'Place one leaf in good light',
+    hi: 'अच्छी रोशनी में एक पत्ती रखें',
+    mr: 'चांगल्या प्रकाशात एक पान ठेवा',
+  },
+  camera: { en: 'Camera', hi: 'कैमरा', mr: 'कॅमेरा' },
+  cameraAria: { en: 'Open camera', hi: 'कैमरा खोलें', mr: 'कॅमेरा उघडा' },
+  upload: { en: 'Upload', hi: 'अपलोड', mr: 'अपलोड' },
+  uploadAria: { en: 'Upload a photo', hi: 'फोटो अपलोड करें', mr: 'फोटो अपलोड करा' },
+  samples: { en: 'Samples', hi: 'नमूने', mr: 'नमुने' },
+  samplesAria: { en: 'Try a sample image', hi: 'नमूना आज़माएँ', mr: 'नमुना वापरा' },
+  sampleLabel: { en: 'Or try a sample:', hi: 'या नमूना आज़माएँ:', mr: 'किंवा नमुना वापरा:' },
+  retake: { en: 'Retake', hi: 'फिर लें', mr: 'पुन्हा घ्या' },
+  cancel: { en: 'Cancel', hi: 'रद्द करें', mr: 'रद्द करा' },
+  cameraDenied: {
+    en: 'Camera not available — use Upload instead.',
+    hi: 'कैमरा उपलब्ध नहीं — अपलोड का उपयोग करें।',
+    mr: 'कॅमेरा उपलब्ध नाही — अपलोड वापरा.',
+  },
+  notImage: {
+    en: 'Please choose an image file.',
+    hi: 'कृपया एक इमेज फ़ाइल चुनें।',
+    mr: 'कृपया प्रतिमा फाइल निवडा.',
+  },
+  sampleFailed: {
+    en: 'Could not load the sample image.',
+    hi: 'नमूना इमेज लोड नहीं हो सकी।',
+    mr: 'नमुना प्रतिमा लोड होऊ शकली नाही.',
+  },
+  previewAlt: { en: 'Crop leaf preview', hi: 'फसल पत्ती प्रीव्यू', mr: 'पीक पान प्रीव्ह्यू' },
+};
+
+function SproutSvg() {
+  return (
+    <svg viewBox="0 0 64 64" className="capture-sprout" aria-hidden="true">
+      <circle cx="32" cy="22" r="8" fill="#F2C14E" opacity="0.85" />
+      <path d="M32 52 V28" stroke="#8FD19E" strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 40 C 25 38 21 33 21 27 C 27 28 31 32 32 40 Z" fill="#8FD19E" />
+      <path d="M32 36 C 39 34 43 29 43 24 C 37 25 32.5 29 32 36 Z" fill="#C8E6C9" />
+    </svg>
+  );
+}
+
 function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
   const [mode, setMode] = useState('idle'); // 'idle', 'camera', 'preview'
   const [preview, setPreview] = useState(null);
-  
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
   const previewUrlRef = useRef(null);
+
+  const t = (key) => T[key][lang] || T[key].en;
 
   /** Compress, then show the file as preview (revoking the previous object URL). */
   const showPreview = async (file) => {
@@ -93,22 +145,22 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
       onImageSelected(null);
     } catch (err) {
       console.error("Camera access failed:", err);
-      alert('Camera access denied or not available. Please use the upload option.');
+      showToast({ message: t('cameraDenied'), tone: 'warning' });
       setMode('idle');
     }
   };
 
   const takePhoto = () => {
     if (!videoRef.current) return;
-    
+
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
+
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
@@ -123,7 +175,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast({ message: t('notImage'), tone: 'warning' });
       return;
     }
 
@@ -140,7 +192,7 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
       stopCamera();
     } catch (err) {
       console.error("Failed to load sample", err);
-      alert("Failed to load sample image.");
+      showToast({ message: t('sampleFailed'), tone: 'warning' });
     }
   };
 
@@ -158,21 +210,20 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
 
   return (
     <div className="camera-capture-container">
-      {/* Viewfinder Frame */}
+      {/* Viewfinder frame */}
       <div className={`viewfinder-frame ${isLoading ? 'is-scanning' : ''}`}>
-        {/* Motif corners */}
         <div className="corner top-left"></div>
         <div className="corner top-right"></div>
         <div className="corner bottom-left"></div>
         <div className="corner bottom-right"></div>
 
-        {/* Scan line animation */}
         {isLoading && <div className="scan-line"></div>}
 
         {mode === 'idle' && (
           <div className="capture-placeholder">
-            <span className="placeholder-icon">📸</span>
-            <p>Ready to scan crop leaf</p>
+            <SproutSvg />
+            <p className="placeholder-title">{t('ready')}</p>
+            <p className="placeholder-hint">{t('readyHint')}</p>
           </div>
         )}
 
@@ -188,61 +239,87 @@ function CameraCapture({ onImageSelected, disabled, isLoading, lang = 'en' }) {
 
         {mode === 'preview' && preview && (
           <>
-            <img src={preview} alt="Crop preview" className={`preview-image ${isLoading ? 'blur-sm' : ''}`} />
-            {isLoading && <div className="skeleton-overlay skeleton"></div>}
+            <img src={preview} alt={t('previewAlt')} className={`preview-image ${isLoading ? 'blur-sm' : ''}`} />
+            {isLoading && <div className="skeleton-overlay skeleton" />}
           </>
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="capture-actions">
-        {mode === 'camera' ? (
-          <>
-            <button className="capture-btn shutter" onClick={takePhoto} disabled={disabled}>
-              <div className="shutter-inner"></div>
-            </button>
-            <button className="capture-btn secondary" onClick={clearSelection} disabled={disabled}>
-              Cancel
-            </button>
-          </>
-        ) : mode === 'preview' ? (
+      {/* Preview actions */}
+      {mode === 'preview' && !isLoading && (
+        <div className="capture-actions">
           <button className="capture-btn secondary" onClick={clearSelection} disabled={disabled}>
-            ✕ Clear
+            <RotateCcw size={18} aria-hidden="true" /> {t('retake')}
           </button>
-        ) : (
-          <>
-            <button className="capture-btn primary" onClick={startCamera} disabled={disabled}>
-              <Camera size={18} className="btn-icon" /> Open Camera
-            </button>
-            <label className={`capture-btn upload ${disabled ? 'disabled' : ''}`} htmlFor="file-upload">
-              <Upload size={18} className="btn-icon" /> Upload
-            </label>
-            <input
-              ref={fileInputRef}
-              id="file-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="sr-only"
-              disabled={disabled}
-            />
-          </>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Fail-safe Samples for Demo */}
+      {/* Camera actions */}
+      {mode === 'camera' && (
+        <div className="capture-actions">
+          <button className="capture-btn secondary" onClick={clearSelection} disabled={disabled}>
+            {t('cancel')}
+          </button>
+          <button className="capture-btn shutter" onClick={takePhoto} disabled={disabled} aria-label={t('camera')}>
+            <div className="shutter-inner"></div>
+          </button>
+          <span className="capture-btn-ghost" aria-hidden="true" />
+        </div>
+      )}
+
+      {/* Idle: three large source buttons */}
+      {mode === 'idle' && (
+        <div className="capture-actions">
+          <button className="capture-btn primary" onClick={startCamera} disabled={disabled}>
+            <Camera size={22} aria-hidden="true" />
+            <span>{t('camera')}</span>
+          </button>
+          <label className={`capture-btn upload ${disabled ? 'disabled' : ''}`} htmlFor="file-upload">
+            <ImagePlus size={22} aria-hidden="true" />
+            <span>{t('upload')}</span>
+          </label>
+          <input
+            ref={fileInputRef}
+            id="file-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="sr-only"
+            disabled={disabled}
+          />
+        </div>
+      )}
+
+      {/* Fail-safe offline samples */}
       {mode === 'idle' && !isLoading && (
         <div className="sample-images-section">
-          <p className="sample-title">{lang === 'hi' ? 'या नमूना आज़माएँ:' : 'Or try a sample:'}</p>
+          <p className="sample-title">
+            <FlaskConical size={15} aria-hidden="true" /> {t('sampleLabel')}
+          </p>
           <div className="sample-grid">
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample1.jpg', 'tomato_healthy.jpg')} disabled={disabled}>
-              <img src="/samples/sample1.jpg" alt="Sample 1" />
+            <button
+              className="sample-btn"
+              onClick={() => loadSample('/samples/sample1.jpg', 'tomato_healthy.jpg')}
+              disabled={disabled}
+              aria-label={t('samplesAria') + ' 1'}
+            >
+              <img src="/samples/sample1.jpg" alt="" />
             </button>
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample2.jpg', 'tomato_early_blight.jpg')} disabled={disabled}>
-              <img src="/samples/sample2.jpg" alt="Sample 2" />
+            <button
+              className="sample-btn"
+              onClick={() => loadSample('/samples/sample2.jpg', 'tomato_early_blight.jpg')}
+              disabled={disabled}
+              aria-label={t('samplesAria') + ' 2'}
+            >
+              <img src="/samples/sample2.jpg" alt="" />
             </button>
-            <button className="sample-btn" onClick={() => loadSample('/samples/sample3.jpg', 'garden_healthy.jpg')} disabled={disabled}>
-              <img src="/samples/sample3.jpg" alt="Sample 3" />
+            <button
+              className="sample-btn"
+              onClick={() => loadSample('/samples/sample3.jpg', 'garden_healthy.jpg')}
+              disabled={disabled}
+              aria-label={t('samplesAria') + ' 3'}
+            >
+              <img src="/samples/sample3.jpg" alt="" />
             </button>
           </div>
         </div>

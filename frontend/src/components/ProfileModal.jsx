@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { loginProfile } from '../api';
 import './ProfileModal.css';
 
@@ -63,22 +64,27 @@ function ProfileModal({ lang, onClose, onSignedIn }) {
       <div className="profile-modal glass-panel" onClick={(e) => e.stopPropagation()}>
         <div className="profile-modal-head">
           <h3>{t('title')}</h3>
-          <button className="profile-close" onClick={onClose} aria-label={t('close')}>✕</button>
+          <button className="profile-close" onClick={onClose} aria-label={t('close')}>
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <label className="profile-label" htmlFor="profile-phone">{t('phoneLabel')}</label>
-          <input
-            id="profile-phone"
-            className="profile-input"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={t('phonePlaceholder')}
-            autoFocus
-          />
+          <div className="profile-phone-wrap">
+            <span className="profile-phone-prefix" aria-hidden="true">+91</span>
+            <input
+              id="profile-phone"
+              className="profile-input"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={t('phonePlaceholder')}
+              autoFocus
+            />
+          </div>
 
           {nameRequired && (
             <>
