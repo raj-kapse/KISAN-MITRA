@@ -30,7 +30,9 @@ router.get('/stores', async (req, res) => {
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        'User-Agent': 'KisanMitra/1.0 (Contact: admin@kisanmitra.local)'
       },
       body: 'data=' + encodeURIComponent(overpassQuery)
     });

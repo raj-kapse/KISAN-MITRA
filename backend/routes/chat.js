@@ -11,7 +11,7 @@ router.post('/chat', aiRateLimit, async (req, res) => {
   try {
     const { messages, context } = req.body;
     
-    if (!messages || !Array.isArray(messages)) {
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ success: false, error: 'Invalid messages format' });
     }
 
