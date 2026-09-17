@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { Home, History, Leaf } from 'lucide-react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
@@ -100,9 +101,6 @@ function App() {
   /** Cycle language: English → हिंदी → मराठी → English */
   const toggleLang = () => setLang(l => l === 'en' ? 'hi' : l === 'hi' ? 'mr' : 'en');
   const nextLangLabel = { en: 'हिंदी', hi: 'मराठी', mr: 'ENG' }[lang];
-
-  // We'll import Lucide icons for the UI
-  const { Home, History, Leaf } = require('lucide-react');
 
   return (
     <div className="app">
