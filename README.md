@@ -1,257 +1,401 @@
-# 🌾 Kisan Mitra — AI Crop Health & Advisory App
+<img src="docs/banner.svg" alt="Kisan Mitra — photograph a crop leaf, get the disease and treatment in seconds, in English, Hindi or Marathi" width="100%">
 
-> **Instant crop disease diagnosis and hyper-local weather advisory for Indian farmers — a multi-provider AI stack (Groq + Google Gemini) with automatic failover.**
->
-> Built for the hackathon problem statements:
-> - **AG-01** — Smart crop disease detection using image processing and machine learning
-> - **AG-02** — Localized weather forecasts and crop recommendations for farmers
+# Kisan Mitra
 
-## What It Does
+**AI crop health and advisory for Indian farmers.** Photograph a crop leaf, get a diagnosis, treatment options with dosages, and weather-aware advice — spoken aloud in English, हिंदी or मराठी.
 
-A farmer photographs a crop leaf → client-side image processing (downscale/compress) → the app identifies the disease in seconds, suggests treatment (chemical + organic + preventive), shows local weather with AI-combined crop guidance, and reads the advisory aloud in Hindi or English. No training pipeline, no model hosting — Google Gemini handles the vision diagnosis (with Groq Qwen fallback), while Groq handles text chat and advisory in a single API call.
+[![License: MIT](https://img.shields.io/badge/License-MIT-2E5F3E.svg)](LICENSE)
+[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-2E5F3E.svg)](https://nodejs.org)
+[![PWA](https://img.shields.io/badge/PWA-installable-2E5F3E.svg)](frontend/vite.config.js)
+[![Backend tests](https://img.shields.io/badge/backend%20tests-1%20passing-2E5F3E.svg)](#testing)
 
-## Key Features
+---
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| 📷 Leaf Disease Detection | ✅ Working | Upload/capture a leaf photo → AI diagnosis in seconds |
-| 🖼️ Client-side Image Processing | ✅ Working | Canvas downscale to 1024px + JPEG compression before upload — faster on rural bandwidth |
-| 💊 Treatment Recommendations | ✅ Working | Chemical, organic, and preventive options with dosages |
-| ⚠️ Yield Risk Estimate | ✅ Working | Economic loss if the disease goes untreated |
-| 🌦️ Weather Advisory | ✅ Working | Current conditions + 5-day forecast, with AI-combined disease + weather guidance |
-| 🔄 Weather Provider Failover | ✅ Working | OpenWeatherMap primary → Open-Meteo keyless backup — weather never dies with a key or quota |
-| 🏙️ Manual Location Fallback | ✅ Working | City-name search when geolocation is denied — the feature never dead-ends |
-| 🗣️ Bilingual Output | ✅ Working | English + Hindi toggle for all diagnosis and treatment text |
-| 🔊 Voice Read-Aloud | ✅ Working | Web Speech API TTS in Hindi or English |
-| 🎙️ Hindi Voice Input | ✅ Working | Hold the mic, speak in Hindi/English → Groq Whisper transcribes → the answer is **spoken aloud** — a fully hands-free loop for farmers who can't type |
-| 🤖 Context-aware Chatbot | ✅ Working | Floating assistant that knows your latest scan and answers follow-ups |
-| 🏪 Nearby Agri-stores | ✅ Working | OpenStreetMap lookup of agrochemical/farm shops within 20 km |
-| 📜 Scan History | ✅ Working | Past diagnoses saved to Firestore, **scoped per device** (privacy) |
-| 💬 WhatsApp / PDF Export | ✅ Working | Share the report with an extension officer or print to PDF |
-| 📱 Offline-capable PWA | ✅ Working | Installable, service worker precache, works on low-end Android |
-| 🌈 Outdoor-Readable UI | ✅ Working | Sunlight-tested color token system (WCAG AA contrast), solid-fill buttons, ≥48px tap targets — designed for bright-field use on low-end phones |
-| 🛡️ Quota Protection | ✅ Working | Rate limiting on AI/weather endpoints, coordinate validation on all geo routes |
+## The problem
 
-## Tech Stack
+A farmer notices spots on a tomato leaf. They have three options: guess, ask a neighbour who is guessing too, or travel to an extension officer and wait days. Meanwhile the infection spreads, and the fungicide they eventually buy is often the wrong one or applied at the wrong dose.
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| **Frontend** | React + Vite (PWA) | Fast dev, small bundle, mobile-first |
-| **Design System** | CSS custom properties — outdoor-first palette | WCAG AA contrast in bright sunlight, status colors kept distinct from brand green, terracotta accent reserved for primary CTAs |
-| **Backend** | Node.js + Express | Quick to scaffold, async I/O |
-| **AI Engine** | **Google Gemini 3.x Flash** (primary for vision) + **Groq · Qwen 3.8-27b** (primary for text) | Near-instant JSON diagnosis (~1-2s); every provider has its own free tier, so the app keeps working when any one is out of quota |
-| **Weather** | OpenWeatherMap (primary) + Open-Meteo (keyless fallback) | Live forecast data with automatic provider failover — the app never depends on a single free key |
-| **Database** | Firebase / Firestore | Real-time, free tier, per-device history scoping |
-| **Voice** | Web Speech API | Browser-native TTS, zero extra infra, Hindi support |
-| **Stores** | OpenStreetMap Overpass API | Free, no API key, farm-shop POIs |
+Kisan Mitra shortens that loop to about a minute. One photo in, an actionable plan out — with the chemical and organic options, the exact dosage per litre, *and* whether the coming weather will wash the spray away before it works.
 
-### Outdoor-First Design System
+Built for the hackathon problem statements **AG-01** (smart crop disease detection) and **AG-02** (localized weather forecasts and crop recommendations).
 
-The UI is built for farmers working in bright sunlight on low/mid-range Android phones. All colors are CSS custom properties defined once in `frontend/src/index.css` (`:root`) and consumed everywhere — no hardcoded hex values scattered in component styles.
+## What it does
 
-| Token | Value | Role |
-|-------|-------|------|
-| `--color-primary` | `#2E5F3E` | Forest green — brand, header, primary actions |
-| `--color-bg` | `#F5F3EE` | Off-white page background (less glare than pure white) |
-| `--color-text` | `#26241F` | Near-black content text |
-| `--color-status-healthy` / `-moderate` / `-severe` | `#4A8B5C` / `#C48A2B` / `#B4432F` | Severity & confidence indicators — always visually distinct from brand green |
-| `--color-accent-cta` | `#A85A3D` | Terracotta — voice input, Analyze CTA, and chat mic **only** |
-| `--color-border` | `#D8D3C7` | Cards, inputs, dividers |
+| Capability | How it works |
+|---|---|
+| **Leaf disease detection** | Camera, gallery, or a bundled sample photo → a multimodal model returns crop, disease, confidence, severity, symptoms, and a numbered action plan |
+| **Trilingual output** | Every field the farmer reads exists in English, Hindi and Marathi (`*_hi`, `*_mr`) — generated in the same AI call, not a second translation pass |
+| **Treatment that's specific** | Chemical, organic and preventive options with dosages, spray timing, and harvest waiting periods |
+| **Weather-aware advisory** | Current conditions + 5-day forecast, then an AI answer that combines *this* diagnosis with *this* forecast, falling back to rule-based tips if AI is unavailable |
+| **Read aloud** | Browser speech synthesis when the device has voices, and a Gemini TTS fallback (server-rendered WAV) when it doesn't — so "Read Aloud" can't silently fail |
+| **Voice input** | Hold the mic, speak in Hindi/English/Marathi → Groq Whisper transcribes → the answer is spoken back automatically |
+| **Farm sign-in** | Phone number is the identity (10 digits, no password). History follows the farmer across visits |
+| **Scan history** | Firestore when configured, otherwise a bounded local JSON store — history works with zero cloud setup |
+| **Nearby agri-stores** | OpenStreetMap Overpass lookup of agrochemical / farm / garden shops within 20 km, with distance |
+| **Share the report** | WhatsApp share text or print/PDF of the full diagnosis |
+| **Installable PWA** | Service-worker precache, manifest, standalone display, plus an offline banner when connectivity drops |
+| **Outdoor-readable UI** | Token-based palette with documented contrast ratios, three themes (light / dark / high-contrast mono), 48px+ tap targets, solid button fills instead of hairline outlines |
 
-Rules baked into the system:
+<p align="center">
+  <img src="docs/user-flow.svg" alt="Four step flow: photograph a leaf, get the diagnosis, get weather-aware treatment, hear and share the advice" width="100%">
+</p>
 
-1. **Status ≠ brand.** Severity/confidence colors never reuse the brand green, so "the app is green" can't be confused with "the crop is healthy."
-2. **One accent, three buttons.** The terracotta CTA color appears only on Read Aloud, Analyze Crop, and the chatbot mic — the actions a farmer needs most — so the eye lands there first.
-3. **WCAG AA everywhere.** Every text/background pairing passes 4.5:1 (e.g. the WhatsApp share button was darkened from `#25D366` at 1.9:1 to `#128C4B` at 4.6:1). Derived `-strong`/`-bg` token variants carry text and tint roles.
-4. **Sunlight-proof chrome.** Solid button fills instead of thin outlines, medium/semibold+ font weights on all primary content, and ≥48px tap targets with generous spacing.
+## Architecture
 
-The PWA theme color (`frontend/index.html` + the manifest in `vite.config.js`) is kept in sync at `#2E5F3E`.
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture: React PWA to Express API to AI, weather and voice providers, with a storage fallback chain" width="100%">
+</p>
 
-### Why a Multi-Provider AI Stack Instead of a Custom Model
+Two processes: an Express API and a React/Vite PWA that proxies `/api/*` to it.
 
-Traditional plant disease classifiers require training a CNN (e.g. MobileNetV2) on labeled datasets like PlantVillage, hosting the model, and maintaining a fixed set of disease classes. We chose a different approach:
+### Provider chains
 
-- **Google Gemini (3.6 Flash → 3.5 Flash-Lite → 3.5 Flash) is the primary engine for vision** — it provides the best agronomic precision on subtle leaf symptoms, returning the full diagnosis as strict JSON.
-- **Groq-hosted Qwen 3.8-27b is the automatic vision failover** — a multimodal model that accepts a raw leaf image and returns the same strict JSON; Groq's free tier allows ~1,000 requests/day with no card required, ensuring the app works when Gemini is out of quota.
-- **Groq is the primary engine for text chat and advisory** — it's near-instant and doesn't consume the Gemini quota that vision diagnosis relies on.
-- A single API call returns disease name, confidence, severity, symptoms, treatment options, yield risk, and crop identification — all as structured JSON
-- Hindi translations are generated in the same call, not through a separate translation layer
-- The model generalises to crops and diseases beyond any fixed training set
-- Client-side canvas preprocessing (resize/compress) keeps uploads fast on rural networks
-- Trade-off: requires network connectivity and depends on provider availability. For a hackathon prototype targeting connected users, this is the right call
-
-#### Provider chain (all automatic, zero user-facing differences)
+Nothing in the app depends on a single API key. Every externally-backed feature has a fallback:
 
 ```
-📷 Diagnosis   →  gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash → Groq/Qwen 3.8-27b
-💬 Chatbot     →  Groq/Qwen 3.8-27b → Gemini
-🌦️ Advisory    →  Groq/Qwen 3.8-27b → Gemini
-🌤️ Weather data →  OpenWeatherMap → Open-Meteo (keyless, never out of quota)
-📍 Geocoding   →  OpenWeatherMap → Open-Meteo (keyless)
+Vision diagnosis   gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.5-flash → groq qwen3.8-27b
+Chat + advisory    groq qwen3.8-27b → gemini-3.6-flash
+Weather data       OpenWeatherMap → Open-Meteo (keyless, unlimited)
+City geocoding     OpenWeatherMap → Open-Meteo (keyless)
+Nearby stores      overpass-api.de → overpass.kumi.systems → overpass.private.coffee
+Speech in          groq whisper-large-v3-turbo
+Speech out         Web Speech API → Gemini TTS (WAV)
+Storage            Firestore → local JSON file (backend/data, gitignored)
 ```
 
-## Quick Start
+Two decisions worth explaining:
+
+**Text runs on Groq, vision runs on Gemini.** Chat and advisory are frequent and cheap, so they go to the fast free tier. Diagnosis is the expensive, accuracy-critical path, so it goes to the stronger vision model first. Keeping them on separate providers also means a busy chatbot can't exhaust the quota that diagnosis depends on.
+
+**Weather data never comes from a language model.** An LLM would happily invent a temperature. Weather and geocoding talk to real weather APIs, with a keyless fallback so the feature survives an expired or rate-limited key. The AI is only used to *interpret* data that already exists.
+
+### Why hosted multimodal models instead of a trained CNN
+
+The conventional approach is to train a classifier (MobileNetV2 on PlantVillage) and host it. We deliberately didn't:
+
+- A trained model only knows its training classes. Hosted multimodal models handle crops and diseases outside any fixed list, which matters in the field.
+- No training pipeline, no GPU hosting, no model drift to maintain during a hackathon.
+- Hindi and Marathi come back in the same call as the diagnosis, with no translation layer.
+- Trade-off, stated plainly: the app needs network connectivity for diagnosis, and diagnosis quality depends on the provider. Client-side image compression mitigates the bandwidth half of that problem; the provider chain mitigates the other half.
+
+### Making an LLM return usable JSON
+
+Asking for strict JSON is not enough in practice. The diagnosis service prompts for a fixed schema and then repairs the shapes we actually observed: markdown fences around the object, a prematurely closed root object (which normally discards an otherwise-good diagnosis), treatment sub-fields drifting to the root, and array fields arriving as a single string. Confidence and severity are also surfaced rather than hidden — a result under 50% confidence shows a "consult a local expert" warning instead of pretending certainty.
+
+## Sample input images
+
+The app ships three leaf photos so the scan flow can be demonstrated without a camera, including from a laptop:
+
+| Image | Used for |
+|---|---|
+| [`sample1.jpg`](frontend/public/samples/sample1.jpg) | Healthy leaf demo |
+| [`sample2.jpg`](frontend/public/samples/sample2.jpg) | Early blight on tomato — the demo case |
+| [`sample3.jpg`](frontend/public/samples/sample3.jpg) | Second healthy leaf demo |
+
+Attribution and licences are recorded in [`frontend/public/samples/CREDITS.md`](frontend/public/samples/CREDITS.md).
+
+## Tech stack
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Frontend | React 19 + Vite 8 | Fast dev loop, small bundle |
+| PWA | `vite-plugin-pwa` | Service worker + manifest generated at build time |
+| Icons | `lucide-react` | Inline SVG, no icon font request |
+| Styling | CSS custom properties | One token set in `frontend/src/index.css`, consumed by every component |
+| Lint | `oxlint` | Zero warnings on the current tree |
+| Backend | Node.js 22+ / Express 5 | Stateless JSON API |
+| Uploads | `multer` (memory storage) | 10 MB cap, MIME allow-list, minimum-size check |
+| AI | `@google/genai` + Groq (OpenAI-compatible HTTP) | Vision, text, speech |
+| Storage | `firebase-admin` | Optional; local JSON fallback when unset |
+| Weather | OpenWeatherMap, Open-Meteo | Keyed primary, keyless backup |
+| Places | Overpass API | No API key |
+
+## Getting started
 
 ### Prerequisites
-- Node.js 18+
-- API keys (all free): [Groq](https://console.groq.com) (primary AI), [Google Gemini](https://aistudio.google.com/apikey) (backup AI), [OpenWeatherMap](https://openweathermap.org/api)
-- Optional: [Firebase project](https://console.firebase.google.com/) for scan history
 
-### Setup
+- **Node.js 22 or newer** (`firebase-admin@14` requires it; Vite 8 needs ≥20.19)
+- Free API keys: [Groq](https://console.groq.com) (text, vision fallback, Whisper), [Google AI Studio](https://aistudio.google.com/apikey) (vision, TTS)
+- Optional: [OpenWeatherMap](https://openweathermap.org/api) (new keys can take up to a couple of hours to activate — weather still works without it via Open-Meteo)
+- Optional: a Firebase project for cloud scan history
+
+### 1. Backend
 
 ```bash
-# Clone
-git clone https://github.com/raj-kapse/KISAN-MITRA.git
-cd KISAN-MITRA
-
-# Backend
 cd backend
-cp .env.example .env    # Fill in your API keys
+cp .env.example .env     # then paste your keys into .env
 npm install
-npm run dev             # http://localhost:5000
+npm run dev              # http://localhost:5000
+```
 
-# Frontend (new terminal)
+On boot the server prints which keys it found, so a missing key is obvious immediately:
+
+```
+Groq API Key: ✅ Set
+Gemini API Key: ✅ Set
+OpenWeather Key: ✅ Set
+Firebase Project: ❌ Missing
+```
+
+### 2. Frontend
+
+```bash
 cd frontend
 npm install
-npm run dev             # http://localhost:5173
+npm run dev              # http://localhost:5173
 ```
 
-### Environment Variables
+Open <http://localhost:5173>, press **Enter to Scan**, and use one of the sample leaf photos if you don't have a crop handy.
 
-Create `backend/.env` (see `backend/.env.example`):
+> **Note on `PORT`:** `dotenv` never overwrites a variable that already exists in the environment. If your shell exports `PORT`, that value wins over `backend/.env`. Set it explicitly (`PORT=5000 npm run dev`) if the server starts on an unexpected port.
 
-```env
-GROQ_API_KEY=your_groq_api_key          # text chat primary (free, no card)
-GROQ_MODEL=qwen/qwen3.8-27b
-GEMINI_API_KEY=your_gemini_api_key      # vision primary
-DIAGNOSIS_PROVIDER_ORDER=gemini,groq
-OPENWEATHER_API_KEY=your_openweather_api_key
-FIREBASE_PROJECT_ID=your_firebase_project_id   # optional
-FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json  # optional
-PORT=5000
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-```
+### Environment variables
 
-See `backend/.env.example` for all options, including per-model Gemini failover overrides.
+Only the first two are required to see the app work; everything else degrades gracefully.
 
-## Project Structure
+| Variable | Default | Purpose |
+|---|---|---|
+| `GROQ_API_KEY` | — | **Required.** Chat, advisory, Whisper transcription, vision fallback |
+| `GEMINI_API_KEY` | — | **Required.** Primary vision diagnosis, TTS fallback |
+| `GROQ_MODEL` | `qwen/qwen3.8-27b` | Text model for chat and advisory |
+| `GROQ_VISION_MODEL` | `qwen/qwen3.8-27b` | Vision fallback model |
+| `GROQ_TRANSCRIBE_MODEL` | `whisper-large-v3-turbo` | Speech-to-text model |
+| `DIAGNOSIS_PROVIDER_ORDER` | `gemini,groq` | Order to try vision providers |
+| `GEMINI_VISION_MODEL_1/2/3` | `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.5-flash` | Vision models tried in order |
+| `GEMINI_TTS_MODEL` | `gemini-2.5-flash-preview-tts` | Model behind `/api/tts` |
+| `OPENWEATHER_API_KEY` | — | Preferred weather + geocoding provider |
+| `FIREBASE_PROJECT_ID` | — | Enables Firestore history (placeholder values are ignored) |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | `./firebase-service-account.json` | Falls back to application default credentials |
+| `PROFILE_AUTH_SECRET` | derived | Signs profile session tokens. **Set this in production**, otherwise it is derived from stable local values |
+| `PROVIDER_TIMEOUT_MS` | `10000` | Hard timeout per AI provider attempt |
+| `PROVIDER_COOLDOWN_MS` | `300000` | How long a failing provider is skipped by the circuit breaker |
+| `PORT` | `5000` | API port |
+| `NODE_ENV` | `development` | Enables localhost CORS origins in development |
+| `FRONTEND_URL` | `http://localhost:5173` | Allowed CORS origin |
+| `TRUST_PROXY` | unset | Set to `1` behind Render/Railway/Cloudflare so rate limits key on the real client IP |
 
-```
-kisan-mitra/
-├── backend/
-│   ├── server.js                # Express entry point + rate limiting
-│   ├── middleware/
-│   │   └── rateLimit.js         # In-memory per-IP rate limiter (no deps)
-│   ├── routes/
-│   │   ├── health.js            # GET  /api/health, /api/ping
-│   │   ├── diagnose.js          # POST /api/diagnose (image upload → Groq/Gemini vision chain)
-│   │   ├── weather.js           # GET  /api/weather?lat=&lon=
-│   │   ├── weatherAdvisory.js   # POST /api/weather-advisory (diagnosis + weather → Groq/Gemini)
-│   │   ├── geocode.js           # GET  /api/geocode?q=<city> (manual location fallback)
-│   │   ├── history.js           # GET/POST /api/history (device-scoped)
-│   │   ├── stores.js            # GET  /api/stores?lat=&lon= (Overpass)
-│   │   ├── chat.js              # POST /api/chat (context-aware assistant)
-│   │   └── transcribe.js        # POST /api/transcribe (voice → Groq Whisper, Hindi)
-│   ├── services/
-│   │   ├── gemini.js            # Vision provider chain: Gemini primary → Groq Qwen failover
-│   │   ├── textProvider.js      # Text provider chain: Groq primary → Gemini fallback
-│   │   ├── weatherService.js    # Weather/geocoding failover: OWM → Open-Meteo (keyless)
-│   │   └── firebase.js          # Firestore init + per-device scan queries
-│   ├── .env.example
-│   └── package.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx              # Main app — scan flow, tabs, language toggle
-│   │   ├── api.js               # Backend API client + device ID
-│   │   ├── components/
-│   │   │   ├── CameraCapture.jsx    # Camera/upload + client-side compression
-│   │   │   ├── DiagnosisResult.jsx  # Disease card + treatment + share/export
-│   │   │   ├── WeatherAdvisory.jsx  # Weather + AI advice + city fallback
-│   │   │   ├── AgriStoreLocator.jsx # Nearby agri-stores
-│   │   │   ├── ScanHistory.jsx      # Per-device history view
-│   │   │   ├── Chatbot.jsx          # Floating assistant + voice input (mic → Whisper → spoken reply)
-│   │   │   └── VoiceButton.jsx      # TTS read-aloud
-│   │   ├── index.css            # Global styles + color tokens (:root design system)
-│   │   └── App.css              # App shell styles
-│   ├── public/
-│   │   ├── manifest.json        # PWA manifest
-│   │   ├── favicon.svg, icon-192.png, icon-512.png
-│   │   └── samples/             # Demo sample leaf images
-│   ├── vite.config.js           # Vite config with /api proxy + PWA plugin
-│   └── package.json
-│
-├── LICENSE                       # MIT
-└── README.md
-```
+## API reference
 
-## API Reference
+All responses are JSON — including 404s, so client error handling never has to parse HTML. AI-costing routes are rate-limited per client IP, in per-feature buckets so one feature can't consume another's budget.
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Server status + API key config check |
-| `/api/ping` | GET | Minimal latency check |
-| `/api/diagnose` | POST | Upload image (multipart, field: `image`) → AI diagnosis JSON *(rate-limited)* |
-| `/api/weather?lat=&lon=` | GET | Current weather + 5-day forecast *(rate-limited)* |
-| `/api/weather-advisory` | POST | Diagnosis + weather → combined AI guidance *(rate-limited)* |
-| `/api/geocode?q=` | GET | City name → coordinates (manual location fallback) |
-| `/api/history` | GET | Recent scans (`?deviceId=` scopes to one device) |
-| `/api/history` | POST | Save a diagnosis (`deviceId` in body) |
-| `/api/stores?lat=&lon=` | GET | Nearby agricultural stores within 20 km |
-| `/api/chat` | POST | Context-aware chatbot reply *(rate-limited)* |
-| `/api/transcribe` | POST | Voice note (multipart, field: `audio`) → Hindi/English transcript via Groq Whisper *(rate-limited)* |
+| Endpoint | Method | Limit | Description |
+|---|---|---|---|
+| `/api/health` | GET | — | Server status + which keys are configured |
+| `/api/ping` | GET | — | Minimal latency check |
+| `/api/diagnose` | POST | 10/min | `multipart/form-data`, field `image` → diagnosis JSON |
+| `/api/weather` | GET | 60/min | `?lat=&lon=` → current conditions + 5-day forecast |
+| `/api/weather-advisory` | POST | 15/min | Diagnosis + weather → combined AI advice |
+| `/api/geocode` | GET | — | `?q=<city>` → coordinates (geolocation fallback) |
+| `/api/transcribe` | POST | 10/min | `multipart/form-data`, field `audio` → transcript |
+| `/api/tts` | POST | 15/min | Text → `audio/wav` (server-side speech fallback) |
+| `/api/chat` | POST | 15/min | Context-aware assistant reply |
+| `/api/history` | GET | — | Recent scans, scoped by `profileId` (authenticated) or `deviceId` |
+| `/api/history` | POST | — | Save a diagnosis |
+| `/api/stores` | GET | 60/min | `?lat=&lon=` → agricultural shops within 20 km |
+| `/api/profile/login` | POST | 10/min | Login-or-register by phone; `409` means "new phone, send a name" |
+| `/api/profile` | GET | — | Hydrate a saved session from a bearer token |
 
-### Diagnosis Response Shape
+### Example: `POST /api/diagnose`
+
+A real response from `frontend/public/samples/sample2.jpg` (trimmed):
 
 ```json
 {
   "success": true,
   "diagnosis": {
-    "disease_name": "Late Blight",
-    "disease_name_hi": "पछेती झुलसा",
+    "disease_name": "Early Blight of Tomato",
+    "disease_name_hi": "टमाटर का अगेती झुलसा",
+    "disease_name_mr": "टोमॅटोवरील अगेती झुलसा",
     "confidence": 0.92,
     "severity": "moderate",
-    "description": "...",
+    "description": "The tomato leaf shows characteristic dark brown to black concentric rings (target-board pattern)...",
     "description_hi": "...",
+    "description_mr": "...",
     "symptoms": ["dark spots on leaves", "white mold"],
+    "next_steps": ["..."],
+    "next_steps_hi": ["..."],
+    "next_steps_mr": ["..."],
     "treatment": {
       "chemical": "Apply Mancozeb 75% WP @ 2.5g/L ...",
       "chemical_hi": "...",
+      "chemical_mr": "...",
       "organic": "Neem oil spray @ 5ml/L ...",
       "organic_hi": "...",
+      "organic_mr": "...",
       "preventive": "Ensure proper spacing ...",
-      "preventive_hi": "..."
+      "preventive_hi": "...",
+      "preventive_mr": "..."
     },
+    "extra_tips": ["..."],
+    "extra_tips_hi": ["..."],
+    "extra_tips_mr": ["..."],
     "crop_type": "Tomato",
-    "yield_risk": "30-40% yield loss if untreated",
-    "yield_risk_hi": "..."
+    "yield_risk": "25-40% yield loss if left untreated",
+    "yield_risk_hi": "...",
+    "yield_risk_mr": "..."
   }
 }
 ```
 
-Non-plant images return `disease_name: "Invalid Image"` instead of an error, and low-confidence results (<50%) trigger a "consult a local expert" warning in the UI.
+A non-plant photo returns `disease_name: "Invalid Image"` rather than an error, so the UI can explain the problem instead of showing a failure.
 
-## Deployment Notes
+## Reliability notes
 
-Set `TRUST_PROXY=1` on hosts behind a reverse proxy (Render/Railway) so per-user rate limiting works; `PROFILE_AUTH_SECRET` must be set explicitly in production or all sessions reset on restart. A phone number can only be active on one device at a time (no password recovery yet).
+These exist because the alternative was a demo that broke on stage.
 
-## Hackathon Topic Coverage
+- **Circuit breaker.** A provider that times out or returns 429/5xx is skipped for `PROVIDER_COOLDOWN_MS` (5 minutes) instead of making every scan pay the timeout again. It rejoins the chain automatically.
+- **Hard timeouts.** Vision attempts are bounded at 10s, text at 15s. Worst-case latency is bounded rather than open-ended.
+- **Per-feature rate limiting.** In-memory, IP-keyed, fixed-window buckets per route. Restarting resets them, and it is per-instance — fine for a single-node demo, needs a shared store (Redis) for a real deployment.
+- **Graceful degradation everywhere.** AI advisory failure still shows weather and rule-based tips. Whisper being down still allows typing. No speech voices still allows server TTS.
+- **Input guards before spending money.** Minimum image size (1 KB) and audio size (2 KB), MIME allow-lists, 10 MB caps, and coordinate validation so an untrusted query param can never reach an upstream query builder.
+- **Stale-response guards.** A superseded diagnosis request can't overwrite fresh state, and history verification happens server-side when a profile is claimed.
 
-**AG-01 — Smart crop disease detection (image processing + ML):**
-client-side canvas preprocessing (resize/compress) → Groq-hosted Qwen 3.8-27b multimodal classification (Gemini failover) → structured severity/confidence/treatment output with bilingual delivery and export.
+## Privacy and data handling
 
-**AG-02 — Localized weather forecasts + crop recommendations:**
-geolocation (with city-name fallback) → OpenWeatherMap/Open-Meteo current + 5-day forecast (automatic provider failover) → prompt-chained AI advisory (Groq primary, Gemini fallback) that fuses the diagnosis with the forecast → rule-based tips when AI is unavailable.
+- **No passwords.** Identity is a 10-digit phone number; the name is a display label. Tokens are HMAC-signed with a 30-day expiry and verified with a timing-safe comparison.
+- **History is scoped, not public.** Requests scoped to a `profileId` require a valid token for that profile; otherwise history falls back to an anonymous per-device ID. Farmers don't see each other's scans.
+- **Guest mode is complete.** Everything works without signing in; only cross-device history needs a profile.
+- **Keys stay server-side.** The browser never sees an AI or weather API key.
+
+## Design system
+
+All colours are CSS custom properties defined once in `frontend/src/index.css` and consumed by components — no scattered hex values. Contrast ratios are documented next to the tokens, and the system has three themes: light, dark, and a high-contrast monochrome mode for glare.
+
+| Token | Light value | Role |
+|---|---|---|
+| `--color-primary` | `#2E5F3E` | Brand green: header, primary actions |
+| `--color-accent-cta` | `#B45309` | Harvest amber, reserved for the primary CTA |
+| `--color-bg` | `#F7F6F2` | Warm paper background (less glare than pure white) |
+| `--color-surface` | `#FFFFFF` | Cards and panels |
+| `--color-text` | `#1F1E1A` | Body text |
+| `--color-status-healthy` / `-moderate` / `-severe` | `#4A8B5C` / `#C48A2B` / `#B4432F` | Severity and confidence — deliberately distinct from brand green |
+
+Three rules the interface follows:
+
+1. **Status never reuses the brand colour**, so "the app is green" can't be mistaken for "the crop is healthy".
+2. **One accent, few buttons.** The amber CTA only appears on the primary action of a screen, so the eye lands there first.
+3. **Built for sunlight and cheap phones.** Solid button fills rather than thin outlines, medium-plus font weights, ≥48px tap targets, `Hind` typeface with Devanagari coverage, and images compressed before upload.
+
+The PWA theme colour is kept in sync at `#2E5F3E` across `frontend/index.html` and the Vite manifest.
+
+## Testing
+
+```bash
+cd backend && npm test     # node --test
+cd frontend && npm run lint # oxlint
+cd frontend && npm run build
+```
+
+`backend/test/profileStore.test.js` covers the security-relevant path: a profile token authorises only the profile that created it, a tampered token is rejected, and re-registering an existing phone without that session fails with `AUTH_REQUIRED`.
+
+Scope, stated honestly: there is **one unit test module and no browser/E2E suite**. The health, diagnose, weather, geocode, chat and transcribe routes were verified manually (and are exercised by the running app), but they are not covered by automated tests yet. Adding route-level tests with a mocked provider is the next testing job.
+
+## Limitations
+
+We would rather judges know these than discover them:
+
+- **Diagnosis needs connectivity** and depends on provider availability. It is an inference-over-API design, not an on-device model — offline scanning is not possible.
+- **No accuracy benchmark.** We have not measured performance against a labelled dataset like PlantVillage, so we make no accuracy claim. Treat output as decision support, and the UI says so directly when confidence is low.
+- **Storage is demo-tier.** The local fallback is a bounded JSON file (500 scans / 500 profiles), and `PROFILE_AUTH_SECRET` should be set explicitly in production.
+- **One device per phone.** A phone number can hold only one active session; there is no password recovery or OTP verification yet.
+- **In-memory rate limiting** resets on restart and is not shared between instances.
+- **Provenance gap:** the licences for `sample1.jpg` and `sample3.jpg` were not recorded when they were added, unlike `sample2.jpg`. We would replace them with clearly-licensed images before any public distribution.
+
+## Roadmap
+
+1. Route-level backend tests with mocked providers, plus a browser smoke test for the scan flow.
+2. OTP verification for phone sign-in, so a typo can't lock an account to one device.
+3. Offline queue: save a scan locally when offline and submit it when connectivity returns.
+4. Move rate limiting to a shared store and run provider health checks in `/api/health`.
+5. Anonymised diagnosis telemetry to measure which crops and diseases are actually being scanned.
+
+## Hackathon coverage
+
+**AG-01 — Smart crop disease detection using image processing and ML**
+
+Client-side image processing (canvas downscale + JPEG re-encode, so phones on rural bandwidth upload 5–10× less) → multimodal classification with a four-step provider chain → structured output (disease, confidence, severity, symptoms, treatment, yield risk) → delivered in three languages with voice output, sharing and export.
+
+**AG-02 — Localized weather forecasts and crop recommendations**
+
+Geolocation with a city-name fallback when permission is denied → OpenWeatherMap with a keyless Open-Meteo backup → current conditions and a 5-day forecast → an advisory prompt that fuses the specific diagnosis with the specific forecast, falling back to rule-based agronomic tips when the AI is unavailable.
+
+### Demo script (about three minutes)
+
+1. Open the app, switch language to हिंदी, and press **Enter to Scan** — the landing gate is part of the product, not a splash screen.
+2. Home shows weather for the current location. Deny location permission on purpose, then search a city by name to show the fallback.
+3. Go to **Scan**, pick `sample2.jpg` (early blight), and analyse. Point out confidence, severity, the numbered action plan, and the chemical/organic/preventive options with dosages.
+4. Scroll to the weather advisory: this is the diagnosis and the forecast combined.
+5. Press **Read Aloud**, then open the assistant and ask a follow-up by voice.
+6. Toggle dark mode and the monochrome theme, then show the same report shared via WhatsApp or printed to PDF.
+
+## Repository layout
+
+```
+KISAN-MITRA/
+├── backend/
+│   ├── server.js                    # Express entry point, CORS, JSON 404, error handler
+│   ├── middleware/
+│   │   ├── rateLimit.js             # Per-feature in-memory rate limiter, no dependencies
+│   │   └── profileAuth.js           # Bearer-token profile guard
+│   ├── routes/
+│   │   ├── health.js                # GET  /api/health, /api/ping
+│   │   ├── diagnose.js              # POST /api/diagnose (upload → vision chain)
+│   │   ├── weather.js               # GET  /api/weather
+│   │   ├── weatherAdvisory.js       # POST /api/weather-advisory
+│   │   ├── geocode.js               # GET  /api/geocode
+│   │   ├── history.js               # GET/POST /api/history (profile- or device-scoped)
+│   │   ├── stores.js                # GET  /api/stores (Overpass + mirror failover)
+│   │   ├── chat.js                  # POST /api/chat
+│   │   ├── transcribe.js            # POST /api/transcribe (Groq Whisper)
+│   │   ├── tts.js                   # POST /api/tts (Gemini TTS → WAV)
+│   │   └── profile.js               # POST /api/profile/login, GET /api/profile
+│   ├── services/
+│   │   ├── gemini.js                # Vision chain + JSON repair + circuit breaker
+│   │   ├── textProvider.js          # Groq → Gemini text chain with timeout
+│   │   ├── weatherService.js        # Weather + geocoding failover, response normalisation
+│   │   ├── scanStore.js             # Firestore → local JSON scan persistence
+│   │   ├── firebase.js              # Optional firebase-admin initialisation
+│   │   └── profileStore.js          # Phone identity, HMAC session tokens
+│   ├── test/profileStore.test.js    # Token authorisation tests
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx                  # Shell: routing, language, themes, landing gate
+│   │   ├── api.js                   # Typed-ish API client, timeouts, device ID
+│   │   ├── index.css                # Design tokens + light/dark/mono themes
+│   │   └── components/
+│   │       ├── LandingPage.jsx      # Welcome gate with trilingual copy
+│   │       ├── Home.jsx             # Dashboard: weather card, quick actions, recent scans
+│   │       ├── CameraCapture.jsx    # Camera/gallery/samples + client-side compression
+│   │       ├── DiagnosisResult.jsx  # Result card, treatment, share/print
+│   │       ├── WeatherAdvisory.jsx  # Forecast + AI advisory + city fallback
+│   │       ├── AgriStoreLocator.jsx # Nearby store lookup
+│   │       ├── ScanHistory.jsx      # Scoped history with relative timestamps
+│   │       ├── Chatbot.jsx          # Assistant with voice input and spoken replies
+│   │       ├── VoiceButton.jsx      # Read-aloud with server TTS fallback
+│   │       ├── ProfileModal.jsx     # Phone sign-in
+│   │       ├── ConfirmDialog.jsx    # Sign-out confirmation
+│   │       ├── OfflineBanner.jsx    # Connectivity state
+│   │       └── Toast.jsx            # Notification host
+│   ├── public/samples/              # Demo leaf photos (+ CREDITS.md)
+│   └── vite.config.js               # React + PWA plugins, /api dev proxy
+├── docs/                            # README diagrams (SVG)
+└── LICENSE
+```
 
 ## Contributors
 
 | Name | Role | GitHub |
-|------|------|--------|
+|---|---|---|
 | **Raj Kapse** | Backend & API Development | [@raj-kapse](https://github.com/raj-kapse) |
 | **Siyal Kambale** | Frontend & PWA | [@Siyalkamble](https://github.com/Siyalkamble) |
 | **Naveen Thakur** | Full-Stack Lead | [@nav548777](https://github.com/nav548777) |
 
+## Credits
+
+- Field backdrop: ["Wheat field in Phagwara Punjab India"](https://commons.wikimedia.org/wiki/File:Wheat_field_in_Phagwara_Punjab_India.jpg) by Sixtybolts, CC BY-SA 2.0 — see [`frontend/public/CREDITS.md`](frontend/public/CREDITS.md).
+- `sample2.jpg`: "Alternaria solani – leaf lesions" by Clemson University / USDA Cooperative Extension Slide Series, via Wikimedia Commons, CC BY 3.0 US — see [`frontend/public/samples/CREDITS.md`](frontend/public/samples/CREDITS.md).
+
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).

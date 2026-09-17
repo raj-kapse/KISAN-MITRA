@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-label="Kisan Mitra — AI crop health and advisory">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16301F" />
+      <stop offset="0.55" stop-color="#24512F" />
+      <stop offset="1" stop-color="#2E5F3E" />
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E5F3E" stop-opacity="0" />
+      <stop offset="1" stop-color="#0E1F14" stop-opacity="0.85" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="340" fill="url(#sky)" />
+  <rect y="212" width="1200" height="128" fill="url(#ground)" />
+
+  <!-- horizon rows, suggesting a field -->
+  <g stroke="#8FD19E" stroke-opacity="0.16" stroke-width="2">
+    <path d="M0 250 H1200" />
+    <path d="M0 268 H1200" />
+    <path d="M0 288 H1200" />
+    <path d="M0 310 H1200" />
+  </g>
+
+  <!-- sun -->
+  <circle cx="150" cy="118" r="34" fill="#F2C14E" />
+  <g stroke="#F2C14E" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9">
+    <line x1="150" y1="56" x2="150" y2="70" />
+    <line x1="196" y1="72" x2="186" y2="82" />
+    <line x1="104" y1="72" x2="114" y2="82" />
+    <line x1="212" y1="118" x2="198" y2="118" />
+    <line x1="102" y1="118" x2="88" y2="118" />
+  </g>
+  <!-- sprout -->
+  <g>
+    <path d="M150 232 V150" stroke="#C8E6C9" stroke-width="7" stroke-linecap="round" />
+    <path d="M150 196 C 118 188 100 162 100 132 C 132 136 148 162 150 196 Z" fill="#8FD19E" />
+    <path d="M150 178 C 184 170 202 144 202 114 C 170 118 152 144 150 178 Z" fill="#C8E6C9" />
+  </g>
+
+  <text x="272" y="128" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="62" font-weight="700" fill="#F5F3EE">Kisan Mitra</text>
+  <text x="276" y="166" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="23" fill="#CBDFCD">किसान मित्र · शेतकरी मित्र</text>
+
+  <text x="276" y="212" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="21" fill="#EAF5EC">Photograph a crop leaf. Get the disease, the treatment,</text>
+  <text x="276" y="242" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="21" fill="#EAF5EC">and weather-aware advice — in English, हिंदी or मराठी.</text>
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#16301F">
+    <rect x="276" y="272" rx="16" ry="16" width="268" height="32" fill="#F2C14E" />
+    <text x="410" y="293" text-anchor="middle" font-weight="600">Multi-provider AI with failover</text>
+
+    <rect x="560" y="272" rx="16" ry="16" width="196" height="32" fill="#C8E6C9" />
+    <text x="658" y="293" text-anchor="middle" font-weight="600">Offline-capable PWA</text>
+
+    <rect x="772" y="272" rx="16" ry="16" width="172" height="32" fill="#C8E6C9" />
+    <text x="858" y="293" text-anchor="middle" font-weight="600">Free API tiers only</text>
+  </g>
+</svg>

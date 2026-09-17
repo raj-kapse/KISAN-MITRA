@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 770" width="1240" height="770" role="img" aria-label="System architecture: farmer's phone to Express API to AI, weather and voice providers, with storage fallback">
+  <rect width="1240" height="770" fill="#F7F6F2" />
+
+  <text x="32" y="44" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="25" font-weight="700" fill="#16301F">How a scan flows through Kisan Mitra</text>
+
+  <!-- ============ Column 1: client ============ -->
+  <rect x="32" y="72" width="300" height="620" rx="14" fill="#FFFFFF" stroke="#E4E1D8" stroke-width="2" />
+  <rect x="32" y="72" width="300" height="52" rx="14" fill="#2E5F3E" />
+  <rect x="32" y="110" width="300" height="14" fill="#2E5F3E" />
+  <text x="48" y="105" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="19" font-weight="700" fill="#F5F3EE">Farmer&#39;s phone</text>
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+    <text x="48" y="148" font-size="14" fill="#565249">React 19 &#183; Vite 8 &#183; installable PWA</text>
+
+    <rect x="48" y="164" width="268" height="82" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="62" y="192" font-size="15" font-weight="600" fill="#1F1E1A">Camera / gallery input</text>
+    <text x="62" y="214" font-size="13" fill="#565249">3 sample leaf photos bundled</text>
+    <text x="62" y="233" font-size="13" fill="#565249">for demos without a camera</text>
+
+    <rect x="48" y="258" width="268" height="82" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="62" y="286" font-size="15" font-weight="600" fill="#1F1E1A">Client-side preprocessing</text>
+    <text x="62" y="308" font-size="13" fill="#565249">canvas downscale, longest edge</text>
+    <text x="62" y="327" font-size="13" fill="#565249">1024px, JPEG q0.85</text>
+
+    <rect x="48" y="352" width="268" height="82" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="62" y="380" font-size="15" font-weight="600" fill="#1F1E1A">Screens</text>
+    <text x="62" y="402" font-size="13" fill="#565249">Landing gate &#8594; Home dashboard</text>
+    <text x="62" y="421" font-size="13" fill="#565249">Scan &#183; History &#183; Advisory &#183; Profile</text>
+
+    <rect x="48" y="446" width="268" height="82" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="62" y="474" font-size="15" font-weight="600" fill="#1F1E1A">Themes &#38; languages</text>
+    <text x="62" y="496" font-size="13" fill="#565249">light / dark / high-contrast mono</text>
+    <text x="62" y="515" font-size="13" fill="#565249">English &#183; हिंदी &#183; मराठी</text>
+
+    <rect x="48" y="540" width="268" height="128" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="62" y="568" font-size="15" font-weight="600" fill="#1F1E1A">Voice</text>
+    <text x="62" y="590" font-size="13" fill="#565249">mic &#8594; transcript &#8594; answer</text>
+    <text x="62" y="609" font-size="13" fill="#565249">spoken back automatically</text>
+    <text x="62" y="634" font-size="13" fill="#565249">Read-aloud falls back to the</text>
+    <text x="62" y="653" font-size="13" fill="#565249">server when the browser has</text>
+    <text x="62" y="672" font-size="13" fill="#565249">no speech voices</text>
+  </g>
+
+  <!-- arrow 1 -->
+  <g>
+    <line x1="332" y1="392" x2="356" y2="392" stroke="#8E3D2C" stroke-width="4" />
+    <polygon points="356,384 372,392 356,400" fill="#8E3D2C" />
+  </g>
+
+  <!-- ============ Column 2: API ============ -->
+  <rect x="372" y="72" width="376" height="620" rx="14" fill="#FFFFFF" stroke="#E4E1D8" stroke-width="2" />
+  <rect x="372" y="72" width="376" height="52" rx="14" fill="#B45309" />
+  <rect x="372" y="110" width="376" height="14" fill="#B45309" />
+  <text x="388" y="105" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="19" font-weight="700" fill="#FFFFFF">Express API</text>
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+    <text x="388" y="148" font-size="14" fill="#565249">Node 22 &#183; stateless &#183; JSON only</text>
+
+    <rect x="388" y="164" width="344" height="72" rx="10" fill="#FFF7E8" stroke="#C48A2B" />
+    <text x="402" y="190" font-size="15" font-weight="600" fill="#1F1E1A">Guards on every request</text>
+    <text x="402" y="211" font-size="13" fill="#565249">per-feature rate buckets (IP-keyed),</text>
+    <text x="402" y="229" font-size="13" fill="#565249">coordinate + payload validation</text>
+
+    <rect x="388" y="248" width="344" height="376" rx="10" fill="#F0F4EF" stroke="#D8D3C7" />
+    <text x="402" y="274" font-size="15" font-weight="600" fill="#1F1E1A">Endpoints</text>
+    <g font-size="13" fill="#565249">
+      <text x="402" y="300" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/diagnose</text>
+      <text x="700" y="300" text-anchor="end" fill="#8E3D2C">10/min</text>
+      <text x="402" y="326" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/chat</text>
+      <text x="700" y="326" text-anchor="end" fill="#8E3D2C">15/min</text>
+      <text x="402" y="352" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/weather-advisory</text>
+      <text x="700" y="352" text-anchor="end" fill="#8E3D2C">15/min</text>
+      <text x="402" y="378" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/transcribe</text>
+      <text x="700" y="378" text-anchor="end" fill="#8E3D2C">10/min</text>
+      <text x="402" y="404" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/tts</text>
+      <text x="700" y="404" text-anchor="end" fill="#8E3D2C">15/min</text>
+      <text x="402" y="430" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET  /api/weather</text>
+      <text x="700" y="430" text-anchor="end" fill="#8E3D2C">60/min</text>
+      <text x="402" y="456" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET  /api/history</text>
+      <text x="402" y="482" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET  /api/geocode</text>
+      <text x="402" y="508" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET  /api/stores</text>
+      <text x="402" y="534" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">POST /api/profile/login</text>
+      <text x="700" y="534" text-anchor="end" fill="#8E3D2C">10/min</text>
+      <text x="402" y="560" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET  /api/health &#183; /api/ping</text>
+      <text x="402" y="592" fill="#565249">Errors are always JSON, never HTML,</text>
+      <text x="402" y="610" fill="#565249">so the client never has to guess.</text>
+    </g>
+
+    <rect x="388" y="636" width="344" height="42" rx="10" fill="#FDEDE9" stroke="#B4432F" />
+    <text x="402" y="663" font-size="13" fill="#8E3D2C">10&#8211;15s timeouts &#183; 5-min provider cooldown</text>
+  </g>
+
+  <!-- arrow 2 -->
+  <g>
+    <line x1="748" y1="392" x2="776" y2="392" stroke="#8E3D2C" stroke-width="4" />
+    <polygon points="776,384 792,392 776,400" fill="#8E3D2C" />
+  </g>
+
+  <!-- ============ Column 3: providers ============ -->
+  <rect x="792" y="72" width="416" height="620" rx="14" fill="#FFFFFF" stroke="#E4E1D8" stroke-width="2" />
+  <rect x="792" y="72" width="416" height="52" rx="14" fill="#1E5A8A" />
+  <rect x="792" y="110" width="416" height="14" fill="#1E5A8A" />
+  <text x="808" y="105" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="19" font-weight="700" fill="#FFFFFF">Providers</text>
+
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+    <text x="808" y="148" font-size="14" fill="#565249">every chain has a no-key or free-tier fallback</text>
+
+    <rect x="808" y="164" width="384" height="70" rx="10" fill="#EAF3FA" stroke="#1E5A8A" />
+    <text x="822" y="188" font-size="15" font-weight="600" fill="#1F1E1A">Vision diagnosis</text>
+    <text x="822" y="210" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">gemini-3.6-flash &#8594; 3.5-flash-lite &#8594; 3.5-flash</text>
+    <text x="822" y="227" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&#8594; groq qwen3.8-27b (multimodal)</text>
+
+    <rect x="808" y="246" width="384" height="70" rx="10" fill="#EAF3FA" stroke="#1E5A8A" />
+    <text x="822" y="270" font-size="15" font-weight="600" fill="#1F1E1A">Chat &#38; crop advisory</text>
+    <text x="822" y="292" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">groq qwen3.8-27b &#8594; gemini-3.6-flash</text>
+    <text x="822" y="309" font-size="12" fill="#565249">text runs on Groq so it never eats vision quota</text>
+
+    <rect x="808" y="328" width="384" height="70" rx="10" fill="#EDF5EF" stroke="#4A8B5C" />
+    <text x="822" y="352" font-size="15" font-weight="600" fill="#1F1E1A">Weather data</text>
+    <text x="822" y="374" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">OpenWeatherMap &#8594; Open-Meteo (keyless)</text>
+    <text x="822" y="391" font-size="12" fill="#565249">the AI never invents temperatures</text>
+
+    <rect x="808" y="410" width="384" height="70" rx="10" fill="#EDF5EF" stroke="#4A8B5C" />
+    <text x="822" y="434" font-size="15" font-weight="600" fill="#1F1E1A">City geocoding</text>
+    <text x="822" y="456" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">OpenWeatherMap &#8594; Open-Meteo (keyless)</text>
+    <text x="822" y="473" font-size="12" fill="#565249">powers the no-GPS fallback path</text>
+
+    <rect x="808" y="492" width="384" height="70" rx="10" fill="#EDF5EF" stroke="#4A8B5C" />
+    <text x="822" y="516" font-size="15" font-weight="600" fill="#1F1E1A">Nearest agri-stores</text>
+    <text x="822" y="538" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">Overpass API &#8594; 2 mirrors</text>
+    <text x="822" y="555" font-size="12" fill="#565249">20 km radius, no API key needed</text>
+
+    <rect x="808" y="574" width="384" height="70" rx="10" fill="#EAF3FA" stroke="#1E5A8A" />
+    <text x="822" y="598" font-size="15" font-weight="600" fill="#1F1E1A">Voice in &#38; out</text>
+    <text x="822" y="620" font-size="12" fill="#565249" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">whisper-large-v3-turbo &#8594; gemini TTS</text>
+    <text x="822" y="637" font-size="12" fill="#565249">browser speech first, server speech as backup</text>
+
+    <text x="808" y="668" font-size="13" fill="#565249">One JSON contract for every provider, so a failover</text>
+    <text x="808" y="685" font-size="13" fill="#565249">is invisible to the UI.</text>
+  </g>
+
+  <!-- ============ Storage strip ============ -->
+  <rect x="32" y="706" width="1176" height="46" rx="12" fill="#16301F" />
+  <text x="52" y="735" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-size="15" fill="#EAF5EC">Scan history: Firestore when credentials are configured &#8594; otherwise a bounded local JSON store, so the app works with zero cloud setup.</text>
+</svg>
