@@ -19,6 +19,38 @@ import Chatbot from './components/Chatbot';
 import { diagnoseCrop, saveScanHistory } from './api';
 import './App.css';
 
+/**
+ * KisanLogo — custom brand mark: a rising sun over a young sprout.
+ * Inline SVG so it is crisp at any size, needs no network request,
+ * and adds zero load time.
+ */
+function KisanLogo({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <circle cx="32" cy="24" r="9" fill="#F2C14E" />
+      <g stroke="#F2C14E" strokeWidth="2.4" strokeLinecap="round">
+        <line x1="32" y1="7" x2="32" y2="10" />
+        <line x1="45" y1="12" x2="42.6" y2="14.4" />
+        <line x1="19" y1="12" x2="21.4" y2="14.4" />
+      </g>
+      <path d="M32 54 V30" stroke="#EAF5EC" strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 42 C 24 40 20 34 20 27 C 27 28 31.5 33 32 42 Z" fill="#8FD19E" />
+      <path d="M32 38 C 40 36 44 30 44 23 C 37 24 32.5 29 32 38 Z" fill="#C8E6C9" />
+      <path d="M22 56 q10 -4 20 0" stroke="#EAF5EC" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Header name + tagline per language. */
+const HEADER_TEXT = {
+  appName: { en: 'Kisan Mitra', hi: 'किसान मित्र', mr: 'शेतकरी मित्र' },
+  subtitle: {
+    en: 'AI Crop Health & Advisory',
+    hi: 'AI फसल स्वास्थ्य एवं सलाह',
+    mr: 'AI पीक आरोग्य व सल्ला',
+  },
+};
+
 function App() {
   // Image state
   const [selectedImage, setSelectedImage] = useState(null);
@@ -104,9 +136,17 @@ function App() {
 
   return (
     <div className="app">
+      {/* Soft field-photo backdrop behind the frosted content panels */}
+      <div className="field-bg" aria-hidden="true" />
       <header className="app-header glass-panel">
         <div className="header-top">
-          <h1>Kisan Mitra</h1>
+          <div className="header-brand">
+            <KisanLogo className="header-logo" />
+            <div className="header-titles">
+              <h1>{HEADER_TEXT.appName[lang]}</h1>
+              <p className="subtitle">{HEADER_TEXT.subtitle[lang]}</p>
+            </div>
+          </div>
           <div className="header-controls">
             <button
               className="lang-toggle"
@@ -117,9 +157,6 @@ function App() {
             </button>
           </div>
         </div>
-        <p className="subtitle">
-          {lang === 'hi' ? 'AI फसल स्वास्थ्य एवं सलाह' : lang === 'mr' ? 'AI पीक आरोग्य व सल्ला' : 'AI Crop Health & Advisory'}
-        </p>
       </header>
 
       <main className="app-main pb-bottom-nav">

@@ -90,9 +90,11 @@
   --shadow-3d-cta-active: 0 2px 0 #7A3F28, 0 4px 4px rgba(168, 90, 61, 0.2);
 
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px rgba(38, 36, 31, 0.05);
+  /* Frosted panels over the field photo — opacity raised so text keeps
+   * AA contrast on every surface (was 0.7 / 0.4). */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-shadow: 0 8px 32px rgba(38, 36, 31, 0.12);
 }
 
 /* Reset */

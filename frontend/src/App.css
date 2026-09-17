@@ -1,11 +1,43 @@
 /* ==========================================
  * Kisan Mitra — App Component Styles
+ * Theme: village-friendly outdoor design.
+ * - Real field photo as a soft, blurred page background (62 KB, local)
+ * - Frosted-glass content cards so text stays high-contrast
+ * - Press/ripple animations are transform/opacity only (GPU-composited,
+ *   no layout work) so the UI stays snappy on cheap Android phones
  * ========================================== */
 
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+}
+
+/* --- Field photo page background ---
+ * A fixed, blurred, green-tinted photo layer behind the glass panels.
+ * Blurring is baked into a tiny local file (no runtime filter cost).
+ */
+.field-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      rgba(38, 61, 44, 0.42),
+      rgba(38, 61, 44, 0.28) 45%,
+      rgba(245, 243, 238, 0.55)
+    ),
+    url('/field-bg.jpg') center 30% / cover no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* --- Header --- */
@@ -22,22 +54,42 @@
 
 .header-top {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  position: relative;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.header-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+.header-titles {
+  text-align: left;
+  min-width: 0;
 }
 
 .app-header h1 {
-  font-size: var(--font-size-xl);
+  font-size: 1.35rem;
   font-weight: var(--weight-bold);
   margin: 0;
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .header-controls {
-  position: absolute;
-  right: 0;
   display: flex;
-  gap: var(--space-xs);
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .lang-toggle {
@@ -50,19 +102,42 @@
   font-size: var(--font-size-xs);
   font-weight: var(--weight-bold);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .lang-toggle:hover {
   background: var(--color-surface-tint);
 }
 
+.lang-toggle:active {
+  transform: scale(0.94);
+}
+
 .app-header .subtitle {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-on-dark);
   opacity: 0.92;
   font-weight: var(--weight-medium);
-  margin: 2px 0 var(--space-sm);
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Universal press feedback for every tappable element — cheap and snappy */
+button,
+.nav-item,
+.store-locator-btn {
+  touch-action: manipulation;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.nav-tab,
+.nav-item {
+  will-change: transform;
 }
 
 /* Nav tabs */
