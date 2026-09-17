@@ -17,9 +17,10 @@ const router = express.Router();
 router.get('/history', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
-    // Scope to the calling device; fall back to unfiltered for old clients
+    // Scope priority: logged-in profile → else the calling device
     const deviceId = (req.query.deviceId || '').toString().trim().slice(0, 128) || null;
-    const scans = await getRecentScans(limit, deviceId);
+    const profileId = (req.query.profileId || '').toString().trim().slice(0, 64) || null;
+    const scans = await getRecentScans(limit, deviceId, profileId);
     return res.json({ success: true, scans });
   } catch (err) {
     console.error('❌ History fetch error:', err.message);
@@ -37,7 +38,7 @@ router.get('/history', async (req, res) => {
  */
 router.post('/history', async (req, res) => {
   try {
-    const { diagnosis, location, deviceId } = req.body;
+    const { diagnosis, location, deviceId, profileId, profileName } = req.body;
 
     if (!diagnosis) {
       return res.status(400).json({
@@ -50,6 +51,9 @@ router.post('/history', async (req, res) => {
       diagnosis,
       location: location || null,
       deviceId: typeof deviceId === 'string' ? deviceId.trim().slice(0, 128) : null,
+      // Profile attribution (logged-in farmer) — shown in history
+      profileId: typeof profileId === 'string' ? profileId.trim().slice(0, 64) : null,
+      profileName: typeof profileName === 'string' ? profileName.trim().slice(0, 60) : null,
       timestamp: new Date().toISOString(),
     };
 

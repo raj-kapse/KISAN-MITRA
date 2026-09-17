@@ -87,16 +87,21 @@ async function saveScan(scan) {
 /**
  * Retrieve recent scans, newest first. When deviceId is set, only that
  * device's scans are returned (same semantics as the Firestore path).
+ * profileId, when set, scopes results to one farmer's history instead.
  */
-async function getRecentScans(limit = 20, deviceId = null) {
+async function getRecentScans(limit = 20, deviceId = null, profileId = null) {
   if (isFirebaseReady()) {
-    const scans = await getFromFirestore(limit, deviceId);
-    if (scans !== null) return scans;
+    const scans = await getFromFirestore(limit, profileId ? null : deviceId);
+    if (scans !== null) {
+      return profileId ? scans.filter(s => s.profileId === profileId).slice(0, limit) : scans;
+    }
     console.warn('⚠️ Firestore read failed — falling back to local scan store');
   }
 
   let scans = readScans();
-  if (deviceId) {
+  if (profileId) {
+    scans = scans.filter(s => s.profileId === profileId);
+  } else if (deviceId) {
     scans = scans.filter(s => s.deviceId === deviceId);
   }
   return scans

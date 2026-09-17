@@ -9,13 +9,15 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Home, History, Leaf } from 'lucide-react';
+import { Home, History, Leaf, User, LogOut } from 'lucide-react';
 import CameraCapture from './components/CameraCapture';
 import DiagnosisResult from './components/DiagnosisResult';
 import WeatherAdvisory from './components/WeatherAdvisory';
 import VoiceButton from './components/VoiceButton';
 import ScanHistory from './components/ScanHistory';
 import Chatbot from './components/Chatbot';
+import LandingPage from './components/LandingPage';
+import ProfileModal from './components/ProfileModal';
 import { diagnoseCrop, saveScanHistory } from './api';
 import './App.css';
 
@@ -64,6 +66,33 @@ function App() {
   // UI state
   const [lang, setLang] = useState('en'); // 'en' | 'hi' | 'mr'
   const [view, setView] = useState('scan'); // 'scan' or 'history'
+  const [entered, setEntered] = useState(() => {
+    // Returning visitors skip the landing page (per browser)
+    try { return localStorage.getItem('kisan_mitra_entered') === '1'; } catch { return false; }
+  });
+
+  // Farmer profile — phone-number identity. Persisted so history is
+  // linked to the same farmer across visits.
+  const [profile, setProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kisan_mitra_profile') || 'null'); } catch { return null; }
+  });
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const handleSignedIn = (p) => {
+    setProfile(p);
+    setProfileOpen(false);
+    try { localStorage.setItem('kisan_mitra_profile', JSON.stringify(p)); } catch { /* storage blocked */ }
+  };
+
+  const handleSignOut = () => {
+    setProfile(null);
+    try { localStorage.removeItem('kisan_mitra_profile'); } catch { /* storage blocked */ }
+  };
+
+  const handleEnter = () => {
+    setEntered(true);
+    try { localStorage.setItem('kisan_mitra_entered', '1'); } catch { /* storage blocked */ }
+  };
 
   // Increments on every new diagnose request; responses from superseded
   // requests are discarded so a slow old scan can't overwrite fresh state.
@@ -106,8 +135,9 @@ function App() {
       if (!isCurrent()) return; // a newer scan started meanwhile
       if (result.success && result.diagnosis) {
         setDiagnosis(result.diagnosis);
-        // Fire-and-forget save to history (don't block the UI)
-        saveScanHistory(result.diagnosis).catch(err =>
+        // Fire-and-forget save to history (don't block the UI),
+        // tagged with the farmer's profile when signed in
+        saveScanHistory(result.diagnosis, null, profile).catch(err =>
           console.warn('History save skipped:', err.message)
         );
       } else {
@@ -134,6 +164,23 @@ function App() {
   const toggleLang = () => setLang(l => l === 'en' ? 'hi' : l === 'hi' ? 'mr' : 'en');
   const nextLangLabel = { en: 'हिंदी', hi: 'मराठी', mr: 'ENG' }[lang];
 
+  // Landing page gate — first visit shows the welcome screen
+  if (!entered) {
+    return (
+      <>
+        <LandingPage
+          lang={lang}
+          onToggleLang={toggleLang}
+          onEnter={handleEnter}
+          profile={profile}
+        />
+        {profileOpen && (
+          <ProfileModal lang={lang} onClose={() => setProfileOpen(false)} onSignedIn={handleSignedIn} />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="app">
       {/* Soft field-photo backdrop behind the frosted content panels */}
@@ -148,6 +195,26 @@ function App() {
             </div>
           </div>
           <div className="header-controls">
+            {profile ? (
+              <button
+                className="profile-chip"
+                onClick={handleSignOut}
+                title={lang === 'hi' ? 'साइन आउट' : lang === 'mr' ? 'साइन आउट' : 'Sign out'}
+              >
+                <User size={15} />
+                <span className="profile-chip-name">{profile.name.split(' ')[0]}</span>
+                <LogOut size={14} />
+              </button>
+            ) : (
+              <button
+                className="profile-chip profile-chip-signin"
+                onClick={() => setProfileOpen(true)}
+                title={lang === 'hi' ? 'साइन इन करें' : lang === 'mr' ? 'साइन इन करा' : 'Sign in'}
+              >
+                <User size={15} />
+                <span>{lang === 'hi' ? 'साइन इन' : lang === 'mr' ? 'साइन इन' : 'Sign in'}</span>
+              </button>
+            )}
             <button
               className="lang-toggle"
               onClick={toggleLang}
@@ -162,7 +229,7 @@ function App() {
       <main className="app-main pb-bottom-nav">
         {view === 'history' && (
           <div className="animate-slide-up">
-            <ScanHistory lang={lang} onBack={() => setView('scan')} />
+            <ScanHistory lang={lang} profile={profile} onBack={() => setView('scan')} />
           </div>
         )}
 
@@ -226,6 +293,10 @@ function App() {
 
       {/* Floating Chatbot */}
       <Chatbot diagnosis={diagnosis} lang={lang} />
+
+      {profileOpen && (
+        <ProfileModal lang={lang} onClose={() => setProfileOpen(false)} onSignedIn={handleSignedIn} />
+      )}
 
       <nav className="bottom-nav glass-panel">
         <button 

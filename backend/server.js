@@ -27,6 +27,7 @@ const storesRoutes = require('./routes/stores');
 const chatRoutes = require('./routes/chat');
 const transcribeRoutes = require('./routes/transcribe');
 const ttsRoutes = require('./routes/tts');
+const profileRoutes = require('./routes/profile');
 
 // --- App setup ---
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api', storesRoutes);
 app.use('/api', chatRoutes);
 app.use('/api', transcribeRoutes);
 app.use('/api', ttsRoutes);
+app.use('/api', profileRoutes);
 
 // --- Error handling middleware ---
 app.use((err, req, res, next) => {

@@ -113,6 +113,35 @@
   transform: scale(0.94);
 }
 
+/* Profile chip — signed-in farmer (tap again to sign out) */
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-text-on-dark);
+  color: var(--color-primary-dark);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: transform 0.1s;
+  margin-right: var(--space-xs);
+}
+
+.profile-chip:active {
+  transform: scale(0.94);
+}
+
+.profile-chip-name {
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .app-header .subtitle {
   font-size: var(--font-size-xs);
   color: var(--color-text-on-dark);

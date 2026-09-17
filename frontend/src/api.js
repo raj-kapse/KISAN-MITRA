@@ -77,10 +77,37 @@ export async function getWeather(lat, lon) {
 }
 
 /**
- * Fetches scan history from Firestore.
+ * Saves a diagnosis scan to Firestore (or the local fallback store),
+ * tagged with the logged-in farmer's profile when one exists.
  */
-export async function getHistory(limit = 20) {
-  const res = await fetch(`${API_BASE}/api/history?limit=${limit}&deviceId=${encodeURIComponent(getDeviceId())}`);
+export async function saveScanHistory(diagnosis, location = null, profile = null) {
+  const res = await fetch(`${API_BASE}/api/history`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      diagnosis,
+      location,
+      deviceId: getDeviceId(),
+      profileId: profile?.id || null,
+      profileName: profile?.name || null,
+    }),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Save failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Fetches scan history — scoped to the logged-in profile when given,
+ * otherwise to this device.
+ */
+export async function getHistory(limit = 20, profile = null) {
+  const scope = profile?.id
+    ? `profileId=${encodeURIComponent(profile.id)}`
+    : `deviceId=${encodeURIComponent(getDeviceId())}`;
+  const res = await fetch(`${API_BASE}/api/history?limit=${limit}&${scope}`);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `History fetch failed: ${res.status}`);
@@ -89,19 +116,22 @@ export async function getHistory(limit = 20) {
 }
 
 /**
- * Saves a diagnosis scan to Firestore.
+ * Login-or-register a farmer profile by phone (name required for new phones).
+ * A 409 response means "phone is new, name required".
  */
-export async function saveScanHistory(diagnosis, location = null) {
-  const res = await fetch(`${API_BASE}/api/history`, {
+export async function loginProfile(phone, name = '') {
+  const res = await fetch(`${API_BASE}/api/profile/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ diagnosis, location, deviceId: getDeviceId() }),
+    body: JSON.stringify({ phone, name }),
   });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `Save failed: ${res.status}`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.success) {
+    const err = new Error(body.error || `Sign-in failed: ${res.status}`);
+    err.nameRequired = Boolean(body.nameRequired);
+    throw err;
   }
-  return res.json();
+  return body.profile;
 }
 
 /**

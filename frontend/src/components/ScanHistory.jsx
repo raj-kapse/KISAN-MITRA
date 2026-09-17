@@ -9,30 +9,33 @@ import { useState, useEffect } from 'react';
 import { getHistory } from '../api';
 import './ScanHistory.css';
 
-function ScanHistory({ lang = 'en', onBack }) {
+function ScanHistory({ lang = 'en', onBack, profile = null }) {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
-    setLoading(true);
-    try {
-      const result = await getHistory();
-      if (result.success) {
-        setScans(result.scans || []);
-      } else {
-        throw new Error(result.error || 'Failed to load history');
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const result = await getHistory(20, profile);
+        if (!cancelled) {
+          if (result.success) {
+            setScans(result.scans || []);
+          } else {
+            throw new Error(result.error || 'Failed to load history');
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [profile]);
 
   const isHi = lang === 'hi';
 
