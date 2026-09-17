@@ -254,7 +254,10 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
         setVoiceState('transcribing');
         try {
           const text = await transcribeAudio(blob);
-          if (!text) throw new Error(lang === 'hi' ? 'कुछ सुनाई नहीं दिया।' : 'Nothing was captured.');
+          if (!text) throw new Error(
+            lang === 'hi' ? 'कुछ सुनाई नहीं दिया — दोबारा बोलें।'
+            : lang === 'mr' ? 'काही ऐकू आले नाही — पुन्हा बोला.'
+            : 'Nothing was captured — try again a bit louder.');
           setVoiceState('idle');
           voiceTurnRef.current = true;
           await sendMessage(text); // transcript auto-sends

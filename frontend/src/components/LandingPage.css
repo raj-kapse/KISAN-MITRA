@@ -197,12 +197,6 @@
 
 .landing-guest-btn:hover { color: var(--color-text-on-dark); }
 
-.landing-greeting {
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-semibold);
-  color: rgba(245, 243, 238, 0.9);
-}
-
 .landing-guest-note {
   font-size: var(--font-size-sm);
   color: rgba(245, 243, 238, 0.85);

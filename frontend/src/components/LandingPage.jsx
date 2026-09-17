@@ -103,12 +103,6 @@ function LandingPage({ lang, onToggleLang, onEnter, profile, onSignOutRequest })
       </div>
 
       <div className="landing-center">
-        {profile && (
-          <p className="landing-greeting">
-            {t('greeting')}, {profile.name.split(' ')[0]}
-          </p>
-        )}
-
         <h1 className="landing-welcome">{t('welcome')}</h1>
         <p className="landing-tagline">{t('tagline')}</p>
 

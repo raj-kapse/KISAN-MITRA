@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { CloudSun, MapPin, Sparkles, Info } from 'lucide-react';
+import { CloudSun, MapPin, Sparkles, Info, Search, Droplets, Thermometer, Wind } from 'lucide-react';
 import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
 import { WeatherIcon } from '../utils/weatherIcons';
 import './WeatherAdvisory.css';
@@ -161,7 +161,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
   if (error) {
     return (
       <div className="weather-card error-state">
-        <p>🌦️ {error}</p>
+        <p><CloudSun size={16} aria-hidden="true" /> {error}</p>
         {locationDenied ? (
           <small>{isHi ? 'स्थान की अनुमति बंद है — नीचे अपने शहर का नाम डालें।' : isMr ? 'स्थान परवानगी बंद आहे — खाली तुमच्या शहराचे नाव टाका.' : 'Location permission is off — search your city by name below.'}</small>
         ) : (
@@ -171,7 +171,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
         )}
         {!showManualInput && (
           <button className="retry-btn manual-toggle" onClick={() => { setShowManualInput(true); setManualError(null); }}>
-            {isHi ? '🏙️ शहर खोजें' : isMr ? '🏙️ शहर शोधा' : '🏙️ Search by city'}
+            <Search size={15} aria-hidden="true" /> {isHi ? 'शहर खोजें' : isMr ? 'शहर शोधा' : 'Search by city'}
           </button>
         )}
         {showManualInput && (
@@ -198,7 +198,9 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
   const { current, forecast } = weather;
   const dayNames = isHi
     ? ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि']
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    : isMr
+      ? ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Determine dynamic background class based on weather description
   const desc = (current.description || '').toLowerCase();
@@ -230,9 +232,9 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
             </div>
           </div>
           <div className="current-stats">
-            <span>💧 {current.humidity}%</span>
-            <span>🌡️ {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
-            {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
+            <span><Droplets size={12} aria-hidden="true" /> {current.humidity}%</span>
+            <span><Thermometer size={12} aria-hidden="true" /> {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
+            {current.wind_speed && <span><Wind size={12} aria-hidden="true" /> {current.wind_speed} m/s</span>}
           </div>
         </div>
       )}
@@ -247,7 +249,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
               <div className="forecast-day" key={i}>
                 <span className="forecast-day-name">{dayName}</span>
                 <span className="forecast-temp">{day.temp_min}–{day.temp_max}°</span>
-                <span className="forecast-rain">💧{day.rain_probability}%</span>
+                <span className="forecast-rain"><Droplets size={11} aria-hidden="true" />{day.rain_probability}%</span>
               </div>
             );
           })}
@@ -281,7 +283,7 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
         className="location-switch no-print"
         onClick={() => { setShowManualInput(true); setManualError(null); setError(null); }}
       >
-        {isHi ? '📍 स्थान बदलें' : '📍 Change location'}
+        <MapPin size={14} aria-hidden="true" /> {isHi ? 'स्थान बदलें' : isMr ? 'स्थान बदला' : 'Change location'}
       </button>
 
       {showManualInput && weather && (

@@ -145,9 +145,8 @@
 .nav-item.active { color: var(--color-primary); }
 .nav-item.active svg { transform: scale(1.08); }
 
-.nav-item-ghost { width: 22px; height: 22px; }
-
-.nav-item-label { margin-top: 2px; }
+/* Empty grid cell — keeps the raised scan button on the centre line */
+.nav-ghost { display: block; }
 
 /* Raised center scan button */
 .nav-scan {

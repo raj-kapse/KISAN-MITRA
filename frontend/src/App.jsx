@@ -66,7 +66,6 @@ const HEADER_TEXT = {
 
 const NAV_TEXT = {
   home: { en: 'Home', hi: 'होम', mr: 'होम' },
-  scan: { en: 'Scan', hi: 'स्कैन', mr: 'स्कॅन' },
   history: { en: 'History', hi: 'इतिहास', mr: 'इतिहास' },
   profile: { en: 'Profile', hi: 'प्रोफ़ाइल', mr: 'प्रोफाइल' },
   scanAria: { en: 'Scan a crop', hi: 'फसल स्कैन करें', mr: 'पीक स्कॅन करा' },
@@ -144,6 +143,7 @@ function App() {
   }, [lang]);
 
   const DARK_TOGGLE_LABEL = { en: 'Toggle dark mode', hi: 'डार्क मोड बदलें', mr: 'डार्क मोड बदला' };
+  const MONO_TOGGLE_LABEL = { en: 'Toggle black & white theme', hi: 'श्वेत-श्याम थीम बदलें', mr: 'काळ्या-पांढऱ्या थीम बदला' };
 
   const handleSignedIn = (p) => {
     setProfile(p);
@@ -154,7 +154,8 @@ function App() {
   const confirmSignOut = () => {
     setProfile(null);
     setSignOutOpen(false);
-    clearProfileToken(); // friend's fix: also clear the backend profile token
+    // Also clear the backend profile token so the session can't be reused.
+    clearProfileToken();
     try { localStorage.removeItem('kisan_mitra_profile'); } catch { /* storage blocked */ }
   };
 
@@ -318,9 +319,9 @@ function App() {
             <button
               className="lang-toggle"
               onClick={toggleMono}
-              aria-label="Toggle black & white theme"
+              aria-label={MONO_TOGGLE_LABEL[lang]}
               aria-pressed={theme === 'mono'}
-              title="Theme"
+              title={MONO_TOGGLE_LABEL[lang]}
             >
               {theme === 'mono' ? <Palette size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
@@ -477,18 +478,14 @@ function App() {
           className="nav-scan"
           onClick={() => { handleScanAgain(); setView('scan'); }}
           aria-label={nav('scanAria')}
+          aria-current={view === 'scan' ? 'page' : undefined}
         >
           <ScanLine size={26} aria-hidden="true" />
         </button>
 
-        <button
-          className={`nav-item ${view === 'scan' ? 'active' : ''}`}
-          onClick={() => setView('scan')}
-          aria-current={view === 'scan' ? 'page' : undefined}
-        >
-          <span className="nav-item-ghost" aria-hidden="true" />
-          <span className="nav-item-label">{nav('scan')}</span>
-        </button>
+        {/* Empty track that holds the centre line for the raised scan button,
+            so Home/History and Profile stay balanced around it. */}
+        <span className="nav-ghost" aria-hidden="true" />
 
         <button
           className="nav-item"

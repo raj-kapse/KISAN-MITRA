@@ -82,6 +82,21 @@
   flex-shrink: 0;
 }
 
+/* icon + value rows — inline-flex keeps the lucide icon on the text line */
+.current-stats span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.error-state p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
 /* 5-day forecast */
 .forecast-row {
   display: flex;
@@ -111,7 +126,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-.forecast-rain { color: var(--color-info); }
+.forecast-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-info);
+}
 
 /* Advisory */
 .crop-advice {
@@ -256,6 +276,10 @@
 }
 
 .retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
   min-height: 44px;
   padding: var(--space-sm) var(--space-lg);
   border: 1px solid var(--color-border-strong);
