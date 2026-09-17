@@ -112,6 +112,18 @@ Attribution and licences are recorded in [`frontend/public/samples/CREDITS.md`](
 
 ## Getting started
 
+### One command
+
+```bash
+./install.sh            # checks Node, creates backend/.env, installs both packages
+./install.sh --start    # ...then starts the API and the app together
+./install.sh --check    # verify an existing setup without installing anything
+```
+
+Works on Linux, macOS and Windows (Git Bash or WSL); needs only bash and Node. The script checks your Node version, creates `backend/.env` from the template without overwriting an existing one, installs with `npm ci` when a lockfile is present, reports which API keys are still placeholders, runs the tests and the linter, and (with `--start`) waits until both servers actually answer before printing the URL.
+
+Prefer doing it by hand? The three steps below are all it does.
+
 ### Prerequisites
 
 - **Node.js 22 or newer** (`firebase-admin@14` requires it; Vite 8 needs ≥20.19)
@@ -169,7 +181,8 @@ Only the first two are required to see the app work; everything else degrades gr
 | `PROFILE_AUTH_SECRET` | derived | Signs profile session tokens. **Set this in production**, otherwise it is derived from stable local values |
 | `PROVIDER_TIMEOUT_MS` | `10000` | Hard timeout per AI provider attempt |
 | `PROVIDER_COOLDOWN_MS` | `300000` | How long a failing provider is skipped by the circuit breaker |
-| `PORT` | `5000` | API port |
+| `KISAN_DATA_DIR` | `backend/data` | Where the local JSON fallback store lives. Tests point this at a temp directory so they can never touch real data |
+| `PORT` | `5000` | API port. Validated at boot: an empty, non-numeric or `0` value falls back to 5000 instead of binding a random port |
 | `NODE_ENV` | `development` | Enables localhost CORS origins in development |
 | `FRONTEND_URL` | `http://localhost:5173` | Allowed CORS origin |
 | `TRUST_PROXY` | unset | Set to `1` behind Render/Railway/Cloudflare so rate limits key on the real client IP |
@@ -185,12 +198,12 @@ All responses are JSON — including 404s, so client error handling never has to
 | `/api/diagnose` | POST | 10/min | `multipart/form-data`, field `image` → diagnosis JSON |
 | `/api/weather` | GET | 60/min | `?lat=&lon=` → current conditions + 5-day forecast |
 | `/api/weather-advisory` | POST | 15/min | Diagnosis + weather → combined AI advice |
-| `/api/geocode` | GET | — | `?q=<city>` → coordinates (geolocation fallback) |
+| `/api/geocode` | GET | 30/min | `?q=<city>` → coordinates (geolocation fallback) |
 | `/api/transcribe` | POST | 10/min | `multipart/form-data`, field `audio` → transcript |
 | `/api/tts` | POST | 15/min | Text → `audio/wav` (server-side speech fallback) |
 | `/api/chat` | POST | 15/min | Context-aware assistant reply |
-| `/api/history` | GET | — | Recent scans, scoped by `profileId` (authenticated) or `deviceId` |
-| `/api/history` | POST | — | Save a diagnosis |
+| `/api/history` | GET | 60/min | Recent scans, scoped by `profileId` (authenticated) or `deviceId` |
+| `/api/history` | POST | 30/min | Save a diagnosis |
 | `/api/stores` | GET | 60/min | `?lat=&lon=` → agricultural shops within 20 km |
 | `/api/profile/login` | POST | 10/min | Login-or-register by phone; `409` means "new phone, send a name" |
 | `/api/profile` | GET | — | Hydrate a saved session from a bearer token |
@@ -250,6 +263,35 @@ These exist because the alternative was a demo that broke on stage.
 - **Input guards before spending money.** Minimum image size (1 KB) and audio size (2 KB), MIME allow-lists, 10 MB caps, and coordinate validation so an untrusted query param can never reach an upstream query builder.
 - **Stale-response guards.** A superseded diagnosis request can't overwrite fresh state, and history verification happens server-side when a profile is claimed.
 
+## Security
+
+What is in place, and what still is not.
+
+**Input validation**
+
+- Uploads are checked by **magic bytes**, not by the client's declared MIME type. A text file sent as `image/png` is rejected with a clear message, and providers only ever receive a signature-verified image type. Size floors and ceilings (1 KB–10 MB images, 2 KB–10 MB audio) reject junk before any paid API call.
+- Coordinates are range-validated on every geo route, so nothing untrusted reaches an upstream query builder; history writes require `disease_name` and `crop_type` to be strings and truncate untrusted identifiers.
+- Chat and advisory payloads are filtered to known roles and bounded (20 turns, 2,000 characters each); text-to-speech is capped at 4,000 characters.
+
+**Request abuse**
+
+- Per-feature, per-IP fixed-window rate limits on every route that costs money or fans out upstream — including `/api/geocode` (30/min) and `/api/history` (60/min read, 30/min write), which were previously unrated. Exceeding a limit returns `429` with a `Retry-After` header.
+- JSON bodies are capped at 1 MB (multipart uploads separately); oversized or malformed bodies return `413`/`400`, not a 500.
+- Baseline security headers on every response: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-site`.
+
+**Sessions and secrets**
+
+- Profile tokens are HMAC-SHA256 over a payload with a 30-day expiry, compared with `crypto.timingSafeEqual`; a token authorises only its own profile, and history requests claiming someone else's `profileId` get `403`.
+- A known phone number cannot be taken over from a new device — the second device gets `401` rather than a session.
+- API keys are read server-side only and never logged or returned; the health endpoint reports whether a key is configured, never its value. Error responses expose internal detail only when `NODE_ENV=development`.
+
+**Still open, deliberately**
+
+- **No OTP.** A phone number is an unverified identity — anyone who knows a number can attempt to register it. Acceptable for a hackathon prototype, not for real users.
+- **Rate-limit state is in memory**, so it resets on restart and is not shared across instances. A real deployment needs a shared store.
+- **The token and profile live in `localStorage`**, which any XSS on the origin could read. The app renders no user-supplied HTML and has no `dangerouslySetInnerHTML`, but an httpOnly cookie would be the stronger model.
+- **Device-scoped history is keyed on a client-generated UUID** with no server-side proof of ownership. It is unguessable in practice, but it is not authentication.
+
 ## Privacy and data handling
 
 - **No passwords.** Identity is a 10-digit phone number; the name is a display label. Tokens are HMAC-signed with a 30-day expiry and verified with a timing-safe comparison.
@@ -259,7 +301,9 @@ These exist because the alternative was a demo that broke on stage.
 
 ## Design system
 
-All colours are CSS custom properties defined once in `frontend/src/index.css` and consumed by components — no scattered hex values. Contrast ratios are documented next to the tokens, and the system has three themes: light, dark, and a high-contrast monochrome mode for glare.
+All colours are CSS custom properties defined once in `frontend/src/index.css` and consumed by components — no hex literals remain in any component stylesheet (the only literal colours are inside the inline SVG brand artwork). Contrast ratios are documented next to the tokens, and the system has three themes: light, dark, and a high-contrast monochrome mode for glare.
+
+Text-on-CTA is a token (`--color-text-on-cta`) rather than hardcoded white, which is what keeps the dark theme readable: the amber brightens to `#E8A33D` there, so the label switches to dark ink for an 8.5:1 ratio (white would have been about 2:1).
 
 | Token | Light value | Role |
 |---|---|---|
@@ -281,14 +325,17 @@ The PWA theme colour is kept in sync at `#2E5F3E` across `frontend/index.html` a
 ## Testing
 
 ```bash
-cd backend && npm test     # node --test
+./install.sh --check        # Node version, deps, tests, lint — installs nothing
+cd backend && npm test      # node --test
 cd frontend && npm run lint # oxlint
 cd frontend && npm run build
 ```
 
-`backend/test/profileStore.test.js` covers the security-relevant path: a profile token authorises only the profile that created it, a tampered token is rejected, and re-registering an existing phone without that session fails with `AUTH_REQUIRED`.
+`backend/test/profileStore.test.js` covers the security-relevant paths: a token authorises only the profile that created it, tampered/forged tokens are rejected, malformed tokens never authenticate, and re-registering an existing phone from a new device session fails with `AUTH_REQUIRED`.
 
-Scope, stated honestly: there is **one unit test module and no browser/E2E suite**. The health, diagnose, weather, geocode, chat and transcribe routes were verified manually (and are exercised by the running app), but they are not covered by automated tests yet. Adding route-level tests with a mocked provider is the next testing job.
+The suite points `KISAN_DATA_DIR` at a throwaway temp directory **before** the store is loaded, so tests can never read, overwrite or delete real data — and it ends with a regression guard asserting the real store file is byte-identical afterwards. (An earlier version of this test wrote to the real store and then deleted it, which meant running `npm test` wiped every farmer profile.)
+
+Scope, stated honestly: there is **one unit-test module and no browser/E2E suite**. The health, diagnose, weather, geocode, chat, history and transcribe routes were verified with an explicit 22-case error-path sweep plus live calls against real providers, but they are not covered by automated tests in the repository yet. Adding route-level tests with mocked providers is the next testing job.
 
 ## Limitations
 
@@ -296,6 +343,7 @@ We would rather judges know these than discover them:
 
 - **Diagnosis needs connectivity** and depends on provider availability. It is an inference-over-API design, not an on-device model — offline scanning is not possible.
 - **No accuracy benchmark.** We have not measured performance against a labelled dataset like PlantVillage, so we make no accuracy claim. Treat output as decision support, and the UI says so directly when confidence is low.
+- **Phone identity is unverified.** There is no OTP, so a number is a label rather than proof; see the Security section for the other open items.
 - **Storage is demo-tier.** The local fallback is a bounded JSON file (500 scans / 500 profiles), and `PROFILE_AUTH_SECRET` should be set explicitly in production.
 - **One device per phone.** A phone number can hold only one active session; there is no password recovery or OTP verification yet.
 - **In-memory rate limiting** resets on restart and is not shared between instances.
@@ -305,8 +353,8 @@ We would rather judges know these than discover them:
 
 1. Route-level backend tests with mocked providers, plus a browser smoke test for the scan flow.
 2. OTP verification for phone sign-in, so a typo can't lock an account to one device.
-3. Offline queue: save a scan locally when offline and submit it when connectivity returns.
-4. Move rate limiting to a shared store and run provider health checks in `/api/health`.
+3. Offline queue: save a scan locally when offline and submit it when connectivity returns, so the offline banner's promise is actually true.
+4. Move rate limiting to a shared store, and have `/api/health` probe the AI providers instead of only reporting key presence.
 5. Anonymised diagnosis telemetry to measure which crops and diseases are actually being scanned.
 
 ## Hackathon coverage
@@ -332,6 +380,7 @@ Geolocation with a city-name fallback when permission is denied → OpenWeatherM
 
 ```
 KISAN-MITRA/
+├── install.sh                       # one-command setup + --start / --check
 ├── backend/
 │   ├── server.js                    # Express entry point, CORS, JSON 404, error handler
 │   ├── middleware/
@@ -356,7 +405,7 @@ KISAN-MITRA/
 │   │   ├── scanStore.js             # Firestore → local JSON scan persistence
 │   │   ├── firebase.js              # Optional firebase-admin initialisation
 │   │   └── profileStore.js          # Phone identity, HMAC session tokens
-│   ├── test/profileStore.test.js    # Token authorisation tests
+│   ├── test/profileStore.test.js    # Token + phone-identity tests (temp data dir)
 │   └── .env.example
 ├── frontend/
 │   ├── src/

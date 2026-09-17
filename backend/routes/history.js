@@ -8,6 +8,7 @@
 const express = require('express');
 const { saveScan, getRecentScans } = require('../services/scanStore');
 const { requireProfileAuth } = require('../middleware/profileAuth');
+const { historyReadRateLimit, historyWriteRateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
  * GET /api/history
  * Returns recent scan history from Firestore.
  */
-router.get('/history', async (req, res) => {
+router.get('/history', historyReadRateLimit, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
     // Scope priority: logged-in profile → else the calling device
@@ -44,7 +45,7 @@ router.get('/history', async (req, res) => {
  * Saves a diagnosis scan to Firestore.
  * Body: { diagnosis: {...}, location?: { lat, lon } }
  */
-router.post('/history', async (req, res) => {
+router.post('/history', historyWriteRateLimit, async (req, res) => {
   try {
     const { diagnosis, location, deviceId, profileId, profileName } = req.body;
 

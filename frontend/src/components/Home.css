@@ -338,7 +338,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-accent-cta);
-  color: #FFFFFF;
+  color: var(--color-text-on-cta);
   font-family: inherit;
   font-size: var(--font-size-base);
   font-weight: var(--weight-bold);

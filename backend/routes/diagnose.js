@@ -25,6 +25,38 @@ const ALLOWED_MIME_TYPES = [
   'image/webp',
 ];
 
+/**
+ * Identify an image from its magic bytes.
+ *
+ * The client-declared mimetype is only a claim: a text file or script can be
+ * sent with `Content-Type: image/png` and would otherwise be forwarded to the
+ * AI provider (and stored) as an image. Sniffing the real signature is the
+ * only trustworthy check, and it lets us hand providers a verified type.
+ *
+ * @param {Buffer} buffer
+ * @returns {'image/jpeg'|'image/png'|'image/webp'|null}
+ */
+function sniffImageType(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+    buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+  // WEBP: "RIFF" .... "WEBP"
+  if (
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    return 'image/webp';
+  }
+  return null;
+}
+
 // Configure Multer to keep uploaded files in memory
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -95,12 +127,22 @@ router.post('/diagnose', diagnoseRateLimit, (req, res) => {
         });
       }
 
+      // Verify the bytes really are an image and use the sniffed type — never
+      // the client's claim — when talking to the AI provider.
+      const verifiedMime = sniffImageType(req.file.buffer);
+      if (!verifiedMime) {
+        return res.status(400).json({
+          success: false,
+          error: 'That file is not a valid JPEG, PNG or WEBP image. Please upload a crop/leaf photo.',
+        });
+      }
+
       console.log(
-        `🌱 Processing diagnosis request for: ${req.file.originalname} (${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)} KB)`
+        `🌱 Processing diagnosis request for: ${req.file.originalname} (${verifiedMime}, ${(req.file.size / 1024).toFixed(1)} KB)`
       );
 
       // Invoke Gemini AI diagnosis service
-      const diagnosis = await diagnoseCropDisease(req.file.buffer, req.file.mimetype);
+      const diagnosis = await diagnoseCropDisease(req.file.buffer, verifiedMime);
 
       console.log(
         `✅ Diagnosis successful: [${diagnosis.crop_type || 'Unknown'}] ${diagnosis.disease_name || 'Unknown'} (Confidence: ${diagnosis.confidence})`
@@ -119,9 +161,13 @@ router.post('/diagnose', diagnoseRateLimit, (req, res) => {
         /timed out|429|50[23]|overload|busy|unavailable/i.test(error.message || '');
       return res.status(isProviderIssue ? 503 : 500).json({
         success: false,
+        // Internal error text can carry provider/stack detail — only expose it
+        // in development.
         error: isProviderIssue
           ? 'All AI providers are busy right now — please try again in a few seconds.'
-          : (error.message || 'Internal server error while diagnosing crop image.'),
+          : (process.env.NODE_ENV === 'development'
+            ? (error.message || 'Internal server error while diagnosing crop image.')
+            : 'Could not analyze the image. Please try again.'),
       });
     }
   });

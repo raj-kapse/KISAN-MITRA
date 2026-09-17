@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const { isFirebaseConfigured } = require('../services/firebase');
 const router = express.Router();
 
 /**
@@ -28,10 +29,18 @@ router.get('/health', (req, res) => {
         configured: !!process.env.OPENWEATHER_API_KEY,
         status: process.env.OPENWEATHER_API_KEY ? 'ready' : 'missing_key',
       },
-      firebase: {
-        configured: !!process.env.FIREBASE_PROJECT_ID,
-        status: process.env.FIREBASE_PROJECT_ID ? 'ready' : 'missing_key',
-      },
+      // Ask the real readiness check, not just "is the env var set": the
+      // default .env ships a placeholder project id that firebase.js
+      // deliberately ignores, so a presence check reported "ready" while
+      // scans were silently going to the local JSON store.
+      firebase: (() => {
+        const ready = isFirebaseConfigured();
+        return {
+          configured: ready,
+          status: ready ? 'ready' : 'local_store',
+          detail: ready ? undefined : 'Scan history is using the local JSON store.',
+        };
+      })(),
     },
   };
 

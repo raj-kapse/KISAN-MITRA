@@ -162,7 +162,7 @@
   border: 3px solid var(--color-bg);
   border-radius: var(--radius-full);
   background: var(--color-accent-cta);
-  color: #FFFFFF;
+  color: var(--color-text-on-cta);
   cursor: pointer;
   box-shadow: var(--shadow-lg);
   transition: transform 0.12s ease, background 0.15s ease;
@@ -183,7 +183,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-accent-cta);
-  color: #FFFFFF;
+  color: var(--color-text-on-cta);
   font-family: inherit;
   font-size: var(--font-size-base);
   font-weight: var(--weight-bold);
@@ -203,9 +203,8 @@
 }
 
 .loading-content .spinner {
-  border-top-color: #FFFFFF;
-  border-color: rgba(255, 255, 255, 0.35);
-  border-top-color: #FFFFFF;
+  border-color: color-mix(in srgb, var(--color-text-on-cta) 35%, transparent);
+  border-top-color: var(--color-text-on-cta);
 }
 
 .scan-again-btn {

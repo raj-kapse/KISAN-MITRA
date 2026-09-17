@@ -29,19 +29,11 @@
   animation: toastIn 0.25s ease-out;
 }
 
-.toast-success svg { color: #7CC795; }
-.toast-warning svg { color: #E8B45A; }
-.toast-info svg { color: #7FB3DC; }
-
-/* Mono theme — status read through weight/shape, not hue */
-[data-theme='mono'] .toast-success svg { color: #555555; }
-[data-theme='mono'] .toast-warning svg { color: #1A1A1A; }
-[data-theme='mono'] .toast-info svg    { color: #555555; }
-
-/* Dark theme — slightly brightened tints for legibility on near-black toast */
-[data-theme='dark'] .toast-success svg { color: #8FD4A0; }
-[data-theme='dark'] .toast-warning svg { color: #E8C06B; }
-[data-theme='dark'] .toast-info svg    { color: #7FB3D9; }
+/* Icon tints come from theme-aware tokens (index.css), so mono/dark variants
+ * no longer need per-theme overrides here. */
+.toast-success svg { color: var(--color-toast-success); }
+.toast-warning svg { color: var(--color-toast-warning); }
+.toast-info svg    { color: var(--color-toast-info); }
 
 @keyframes toastIn {
   from { transform: translateY(10px); opacity: 0; }

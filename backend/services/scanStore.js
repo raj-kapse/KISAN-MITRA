@@ -14,7 +14,10 @@ const fs = require('fs');
 const path = require('path');
 const { isFirebaseConfigured, saveScan: saveToFirestore, getRecentScans: getFromFirestore } = require('./firebase');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// KISAN_DATA_DIR lets tests (and multi-instance deployments) point the local
+// store somewhere else. It MUST be honoured before any file is touched — the
+// test suite previously wrote to (and then deleted) the real store.
+const DATA_DIR = process.env.KISAN_DATA_DIR || path.join(__dirname, '..', 'data');
 const SCANS_FILE = path.join(DATA_DIR, 'scans.json');
 
 // Bounded store: keep the N most recent scans overall (the file is a demo-tier

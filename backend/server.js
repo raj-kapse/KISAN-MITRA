@@ -30,7 +30,17 @@ const profileRoutes = require('./routes/profile');
 
 // --- App setup ---
 const app = express();
-const PORT = process.env.PORT || 5000;
+
+// Validate PORT rather than trusting it. Some environments export PORT=0 or a
+// non-numeric value; `process.env.PORT || 5000` would then bind an arbitrary
+// ephemeral port and the app would look broken ("running on http://localhost:0").
+const parsedPort = Number.parseInt(process.env.PORT ?? '', 10);
+const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535
+  ? parsedPort
+  : 5000;
+if (process.env.PORT !== undefined && String(PORT) !== process.env.PORT) {
+  console.warn(`⚠️  Ignoring invalid PORT="${process.env.PORT}" — using ${PORT} instead.`);
+}
 
 // Trust one layer of reverse proxy (Render, Railway, Cloudflare, etc.)
 // so req.ip is the real client IP, not the proxy — essential for
@@ -51,11 +61,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Parse JSON bodies (for non-file requests)
-app.use(express.json({ limit: '10mb' }));
+// Baseline security headers, dependency-free. This is a JSON API, so the
+// useful ones are: don't let browsers sniff a response into a different type,
+// don't allow the API to be framed, and don't leak the caller's URL onward.
+app.use((_req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Referrer-Policy', 'no-referrer');
+  res.set('Cross-Origin-Resource-Policy', 'same-site');
+  next();
+});
+
+// Parse JSON bodies (for non-file requests). 1 MB is generous for every JSON
+// route here (the largest is a 20-turn chat at ~40 KB); file uploads are
+// limited separately by multer. A 10 MB JSON ceiling just invited abuse.
+app.use(express.json({ limit: '1mb' }));
 
 // Parse URL-encoded bodies
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // --- Routes ---
 // Rate limiters are applied INSIDE each router on the specific route
@@ -83,11 +106,15 @@ app.use('/api', (req, res) => {
 // --- Error handling middleware ---
 app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({
+  // Body-parser rejections (oversized/invalid JSON) are client errors, not 500s
+  const status = err.type === 'entity.too.large' ? 413
+    : err.type === 'entity.parse.failed' ? 400
+    : 500;
+  res.status(status).json({
     success: false,
-    error: process.env.NODE_ENV === 'development'
-      ? err.message
-      : 'Internal server error',
+    error: status === 413 ? 'Request body too large.'
+      : status === 400 ? 'Malformed JSON body.'
+      : process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
   });
 });
 

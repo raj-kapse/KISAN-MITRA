@@ -129,11 +129,9 @@
   height: 44px;
   flex-shrink: 0;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.14);
-  color: #F2C14E; /* warm gold accent */
+  background: var(--color-hero-chip);
+  color: var(--color-accent-gold); /* warm gold accent */
 }
-
-[data-theme='mono'] .landing-feature-icon { color: #FFFFFF; }
 
 .landing-feature-copy {
   display: flex;
@@ -166,7 +164,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-accent-cta);
-  color: #FFFFFF;
+  color: var(--color-text-on-cta);
   font-family: inherit;
   font-size: var(--font-size-lg);
   font-weight: var(--weight-bold);

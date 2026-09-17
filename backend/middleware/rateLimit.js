@@ -64,14 +64,21 @@ const advisoryRateLimit = createRateLimiter('advisory', 15, 60_000);
 const ttsRateLimit = createRateLimiter('tts', 15, 60_000);
 const transcribeRateLimit = createRateLimiter('transcribe', 10, 60_000);
 const weatherRateLimit = createRateLimiter('weather', 60, 60_000);
+// Geocoding and history were unrated: geocoding fans out to two upstream
+// providers (an abuse vector) and history is a write endpoint.
+const geocodeRateLimit = createRateLimiter('geocode', 30, 60_000);
+const historyReadRateLimit = createRateLimiter('history-read', 60, 60_000);
+const historyWriteRateLimit = createRateLimiter('history-write', 30, 60_000);
 
 module.exports = {
   createRateLimiter,
-  aiRateLimit: chatRateLimit, // legacy name — chat history
   chatRateLimit,
   diagnoseRateLimit,
   advisoryRateLimit,
   ttsRateLimit,
   transcribeRateLimit,
   weatherRateLimit,
+  geocodeRateLimit,
+  historyReadRateLimit,
+  historyWriteRateLimit,
 };

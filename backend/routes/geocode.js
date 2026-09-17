@@ -6,9 +6,10 @@
 
 const express = require('express');
 const { geocodeWithFallback } = require('../services/weatherService');
+const { geocodeRateLimit } = require('../middleware/rateLimit');
 const router = express.Router();
 
-router.get('/geocode', async (req, res) => {
+router.get('/geocode', geocodeRateLimit, async (req, res) => {
   const q = (req.query.q || '').toString().trim();
 
   if (!q || q.length < 2 || q.length > 100) {

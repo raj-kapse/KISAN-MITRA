@@ -21,8 +21,16 @@ import ConfirmDialog from './components/ConfirmDialog';
 import OfflineBanner from './components/OfflineBanner';
 import Home from './components/Home';
 import { ToastHost } from './components/Toast';
-import { getHistory, diagnoseCrop, saveScanHistory, clearProfileToken } from './api';
+import { getHistory, diagnoseCrop, saveScanHistory, clearProfileToken, SESSION_EXPIRED_EVENT } from './api';
+import { showToast } from './utils/toast';
 import './App.css';
+
+/** Shown when a stored profile session is rejected (e.g. the 30-day token expired). */
+const SESSION_EXPIRED_TEXT = {
+  en: 'Your session expired — please sign in again.',
+  hi: 'सत्र समाप्त हो गया — कृपया दोबारा साइन इन करें।',
+  mr: 'सत्र संपले — कृपया पुन्हा साइन इन करा.',
+};
 
 /**
  * KisanLogo — custom brand mark: a rising sun over a young sprout.
@@ -121,6 +129,19 @@ function App() {
 
   const toggleDark = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
   const toggleMono = () => setTheme(t => (t === 'mono' ? 'light' : 'mono'));
+
+  // A rejected session (api.js already dropped the dead token) must be visible:
+  // sign the farmer out, say why, and reopen the sign-in modal.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setProfile(null);
+      try { localStorage.removeItem('kisan_mitra_profile'); } catch { /* storage blocked */ }
+      showToast({ message: SESSION_EXPIRED_TEXT[lang] || SESSION_EXPIRED_TEXT.en, tone: 'warning' });
+      setProfileOpen(true);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  }, [lang]);
 
   const DARK_TOGGLE_LABEL = { en: 'Toggle dark mode', hi: 'डार्क मोड बदलें', mr: 'डार्क मोड बदला' };
 

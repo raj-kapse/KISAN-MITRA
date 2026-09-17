@@ -15,6 +15,10 @@
   --color-primary-soft: #4F7D5E;   /* decorative green — never for text */
   --color-accent-cta: #B45309;     /* harvest amber — PRIMARY CTA ONLY */
   --color-accent-cta-press: #92400E;
+  --color-text-on-cta: #FFFFFF;    /* 4.7:1 on --color-accent-cta */
+  --color-accent-gold: #F2C14E;    /* landing hero accent on the dark overlay */
+  --color-hero-chip: rgba(255, 255, 255, 0.14); /* translucent chip on the hero photo */
+  --color-online: #7CC795;         /* assistant online indicator */
   --color-whatsapp: #25D366;       /* brand icon tint only, never text */
 
   /* Surfaces & text */
@@ -24,6 +28,12 @@
   --color-text: #1F1E1A;           /* 14.8:1 on surface */
   --color-text-light: #565249;     /* secondary — 7.1:1 on surface */
   --color-text-on-dark: #F5F3EE;
+
+  /* Toast status icons sit on the dark toast pill, so they need their own
+   * theme-aware tints rather than the surface status colours. */
+  --color-toast-success: #7CC795;
+  --color-toast-warning: #E8B45A;
+  --color-toast-info: #7FB3DC;
 
   /* Status — visually distinct from brand green; strong = text, plain = fills/icons */
   --color-status-healthy: #4A8B5C;
@@ -124,6 +134,12 @@
   --color-primary-soft: #767676;
   --color-accent-cta: #111111;
   --color-accent-cta-press: #000000;
+  --color-text-on-cta: #FFFFFF;
+  --color-accent-gold: #FFFFFF;    /* grayscale theme keeps no hue */
+  --color-online: #767676;
+  --color-toast-success: #555555;
+  --color-toast-warning: #1A1A1A;
+  --color-toast-info: #555555;
 
   /* Surfaces & text — cool paper whites */
   --color-bg: #FAFAFA;
@@ -185,6 +201,11 @@
   --color-primary-soft:  #4F7D5E;  /* decorative only */
   --color-accent-cta:    #E8A33D;  /* amber brightened — 8.4:1 on bg */
   --color-accent-cta-press: #CF8B2A;
+  --color-text-on-cta:   #1A1408;  /* dark ink on the brightened amber — 8.6:1 (white was ~2:1) */
+  --color-online:        #7FB08A;
+  --color-toast-success: #8FD4A0;
+  --color-toast-warning: #E8C06B;
+  --color-toast-info:    #7FB3D9;
 
   /* Surfaces & text */
   --color-bg:            #12160F;  /* deep forest-black */

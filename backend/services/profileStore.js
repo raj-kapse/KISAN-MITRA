@@ -18,7 +18,9 @@ const crypto = require('crypto');
 // after a restart (profiles.json persists → farmers locked out with 401).
 // When PROFILE_AUTH_SECRET is unset, derive a STABLE secret from the profiles
 // file path + FIREBASE_PROJECT_ID so sessions survive reboots. Never printed.
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// KISAN_DATA_DIR lets tests point the store at a temp directory instead of the
+// real backend/data — running the test suite must never touch farmer data.
+const DATA_DIR = process.env.KISAN_DATA_DIR || path.join(__dirname, '..', 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 
 const PROFILE_AUTH_SECRET = process.env.PROFILE_AUTH_SECRET ||

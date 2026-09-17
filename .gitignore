@@ -28,3 +28,6 @@ test-images/
 # Local scan-history fallback store (per-machine data)
 backend/data/
 .freebuff/
+
+# Local server logs from install.sh
+.logs/

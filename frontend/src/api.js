@@ -39,6 +39,30 @@ export function getProfileToken() {
 export function clearProfileToken() {
   try { localStorage.removeItem(PROFILE_TOKEN_KEY); } catch { /* storage blocked */ }
 }
+
+/**
+ * An Error that carries the HTTP status, so callers can tell "your session
+ * expired" (401) apart from "the server broke" (500).
+ */
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+/**
+ * Fired when a profile-scoped request is rejected with 401. App listens for it
+ * to sign the farmer out, explain why, and reopen the sign-in modal — without
+ * it, an expired 30-day token looked exactly like "you have no scans".
+ */
+export const SESSION_EXPIRED_EVENT = 'kisan:session-expired';
+
+function notifySessionExpired() {
+  clearProfileToken();
+  try { window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT)); } catch { /* no window */ }
+}
 export function getDeviceId() {
   if (cachedDeviceId) return cachedDeviceId;
   try {
@@ -128,7 +152,9 @@ export async function saveScanHistory(diagnosis, location = null, profile = null
   });
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `Save failed: ${res.status}`);
+    // Only a profile-scoped save can fail with 401 (expired/forged token)
+    if (res.status === 401 && profile?.id) notifySessionExpired();
+    throw new ApiError(errBody.error || `Save failed: ${res.status}`, res.status);
   }
   return res.json();
 }
@@ -147,7 +173,10 @@ export async function getHistory(limit = 20, profile = null) {
   });
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error || `History fetch failed: ${res.status}`);
+    // A 401 here means the stored session is no longer valid — surface it as a
+    // re-auth prompt rather than an error the farmer can't act on.
+    if (res.status === 401 && profile?.id) notifySessionExpired();
+    throw new ApiError(errBody.error || `History fetch failed: ${res.status}`, res.status);
   }
   return res.json();
 }
