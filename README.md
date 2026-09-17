@@ -7,7 +7,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-2E5F3E.svg)](LICENSE)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-2E5F3E.svg)](https://nodejs.org)
 [![PWA](https://img.shields.io/badge/PWA-installable-2E5F3E.svg)](frontend/vite.config.js)
-[![Backend tests](https://img.shields.io/badge/backend%20tests-1%20passing-2E5F3E.svg)](#testing)
+[![Backend tests](https://img.shields.io/badge/backend%20tests-7%20passing-2E5F3E.svg)](#testing)
+[![Demo video](https://img.shields.io/badge/YouTube-Demo%20video-FF0000.svg)](https://youtu.be/Njl0ctRP0NI)
+
+## 🎬 Watch the demo
+
+<a href="https://youtu.be/Njl0ctRP0NI">
+  <img src="https://img.youtube.com/vi/Njl0ctRP0NI/maxresdefault.jpg" alt="Kisan Mitra demo video — photograph a crop leaf and get a trilingual diagnosis with weather-aware treatment, in about three minutes" width="720">
+</a>
+
+<p align="center"><a href="https://youtu.be/Njl0ctRP0NI"><strong>▶ Watch on YouTube — Kisan Mitra: AI Crop Doctor That Speaks Your Language</strong></a></p>
 
 ---
 
@@ -380,6 +389,8 @@ Client-side image processing (canvas downscale + JPEG re-encode, so phones on ru
 Geolocation with a city-name fallback when permission is denied → OpenWeatherMap with a keyless Open-Meteo backup → current conditions and a 5-day forecast → an advisory prompt that fuses the specific diagnosis with the specific forecast, falling back to rule-based agronomic tips when the AI is unavailable.
 
 ### Demo script (about three minutes)
+
+Prefer watching? The [demo video](https://youtu.be/Njl0ctRP0NI) walks this same flow end to end.
 
 1. Open the app, switch language to हिंदी, and press **Enter to Scan** — the landing gate is part of the product, not a splash screen.
 2. Home shows weather for the current location. Deny location permission on purpose, then search a city by name to show the fallback.
