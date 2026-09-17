@@ -20,7 +20,7 @@ function AgriStoreLocator({ lang }) {
   const [cityLoading, setCityLoading] = useState(false);
   const [showCityInput, setShowCityInput] = useState(false);
 
-  const L = {
+  const RAW_L = {
     find: { en: 'Find nearby agri-stores', hi: 'आसपास के कृषि स्टोर खोजें', mr: 'जवळील कृषी दुकाने शोधा' },
     title: { en: 'Nearby Stores', hi: 'नज़दीकी स्टोर', mr: 'जवळील दुकाने' },
     searching: { en: 'Searching...', hi: 'खोज रहा है...', mr: 'शोधत आहे...' },
@@ -30,13 +30,14 @@ function AgriStoreLocator({ lang }) {
     search: { en: 'Search', hi: 'खोजें', mr: 'शोधा' },
     none: { en: 'No stores found nearby.', hi: 'आसपास कोई स्टोर नहीं मिला।', mr: 'जवळ एकही दुकान सापडली नाही.' },
     away: { en: 'away', hi: 'दूर', mr: 'अंतरावर' },
-    // BUG 5: trilingual error strings instead of raw English provider messages
     geoUnsupported: { en: 'Location not supported — search your city below.', hi: 'लोकेशन समर्थित नहीं — नीचे अपना शहर खोजें।', mr: 'स्थान समर्थित नाही — खाली तुमचे शहर शोधा.' },
     geoDenied: { en: 'Location permission is off — search your city below.', hi: 'लोकेशन की अनुमति बंद है — नीचे अपना शहर खोजें।', mr: 'स्थानाची परवानगी बंद आहे — खाली तुमचे शहर शोधा.' },
     geoFailed: { en: 'Could not get your location — search your city below.', hi: 'आपकी लोकेशन नहीं मिली — नीचे अपना शहर खोजें।', mr: 'तुमचे स्थान मिळाले नाही — खाली तुमचे शहर शोधा.' },
     cityFailed: { en: 'Could not find stores for that city — try a larger nearby town.', hi: 'इस शहर के लिए स्टोर नहीं मिले — पास के बड़े शहर को आज़माएँ।', mr: 'या शहरासाठी दुकाने सापडली नाहीत — जवळचे मोठे शहर वापरा.' },
     genericFailed: { en: 'Failed to locate stores — try again.', hi: 'स्टोर खोजने में समस्या — फिर से कोशिश करें।', mr: 'दुकाने शोधण्यात समस्या — पुन्हा प्रयत्न करा.' },
-  }[lang] || {};
+  };
+  const L = {};
+  for (const k in RAW_L) L[k] = RAW_L[k][lang] || RAW_L[k].en;
 
   const fetchStores = async (lat, lon) => {
     const result = await getStores(lat, lon);

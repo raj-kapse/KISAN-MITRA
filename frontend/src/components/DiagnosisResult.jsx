@@ -76,7 +76,7 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
   const isHealthy = disease_name?.toLowerCase() === 'healthy';
 
   // Language labels for section headings and UI strings
-  const L = {
+  const RAW_L = {
     analysis: { en: 'Analysis', hi: 'विश्लेषण', mr: 'विश्लेषण' },
     symptoms: { en: 'Symptoms detected', hi: 'लक्षण', mr: 'लक्षणे' },
     nextSteps: { en: 'What to do — step by step', hi: 'क्या करें — क्रम से', mr: 'काय करावे — क्रमाने' },
@@ -102,7 +102,9 @@ function DiagnosisResult({ diagnosis, lang = 'en' }) {
       hi: 'बढ़िया खबर! आपकी फसल स्वस्थ दिख रही है। अच्छी खेती की आदतें जारी रखें!',
       mr: 'आनंदाची बातमी! तुमचे पीक निरोगी दिसते आहे. चांगल्या शेती पद्धती सुरू ठेवा!',
     },
-  }[lang] || {};
+  };
+  const L = {};
+  for (const k in RAW_L) L[k] = RAW_L[k][lang] || RAW_L[k].en;
 
   // Pick the field for the active language with graceful fallbacks
   const pick = (en, hi, mr) =>
