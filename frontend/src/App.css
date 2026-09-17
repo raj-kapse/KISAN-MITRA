@@ -21,6 +21,20 @@
       var(--color-page-tint-3)
     ),
     url('/field-bg.jpg') center 30% / cover no-repeat;
+  transform-origin: 50% 40%;
+  animation: fieldDrift 40s ease-in-out infinite alternate;
+}
+
+/* Ken Burns: a very slow drift so the field reads as alive, not a flat plate.
+ * Scaling the fixed layer keeps the photo covering the viewport throughout. */
+@keyframes fieldDrift {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+/* Monochrome theme: the photo becomes texture, not a colour image */
+[data-theme='mono'] .field-bg {
+  filter: grayscale(0.9);
 }
 
 /* --- Header --- */

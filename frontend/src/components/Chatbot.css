@@ -7,6 +7,102 @@
   z-index: 300;
 }
 
+/* --- Farmer mascot hint (sits above the FAB, never blocks a tap) --- */
+.mascot-hint {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-xs);
+  pointer-events: none; /* taps pass straight through to whatever is below */
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.mascot-hint.is-hidden {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.mascot-figure {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 6px var(--color-overlay));
+}
+
+/* Waves once when it first appears — never loops */
+.mascot-wave {
+  transform-box: view-box;
+  transform-origin: 42px 46px;
+  animation: mascotWave 1.5s ease-in-out 1 both;
+}
+
+@keyframes mascotWave {
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(-22deg); }
+  36% { transform: rotate(-4deg); }
+  54% { transform: rotate(-20deg); }
+  72% { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.mascot-bubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  animation: mascotBob 2.5s ease-in-out infinite;
+}
+
+/* Tail, aimed down at the FAB */
+.mascot-bubble::after {
+  content: '';
+  position: absolute;
+  right: 20px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  transform: rotate(45deg);
+}
+
+@keyframes mascotBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* The only interactive part of the hint */
+.mascot-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: -6px -6px -6px 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-tint);
+  color: var(--color-text-light);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.mascot-dismiss:hover { color: var(--color-text); }
+
 .chatbot-fab {
   position: relative;
   width: 56px;

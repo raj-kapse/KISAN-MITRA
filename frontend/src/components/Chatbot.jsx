@@ -19,11 +19,47 @@ async function transcribeAudio(blob) {
   return data.text;
 }
 
+/**
+ * Farmer mascot — flat inline SVG, so it costs no asset weight and picks up
+ * theme tokens through CSS variables. It stays legible in light, dark and the
+ * monochrome theme, and it is decorative: aria-hidden with pointer-events off.
+ */
+function FarmerMascot() {
+  return (
+    <svg className="mascot-figure" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      {/* Badge keeps the figure legible over any background */}
+      <circle cx="32" cy="32" r="30" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
+      {/* Turban */}
+      <path d="M21 25c1.5-7 7-10 11-10s9.5 3 11 10c-2.5 2-6.5 3-11 3s-8.5-1-11-3z" fill="var(--color-accent-gold)" />
+      {/* Head */}
+      <circle cx="32" cy="33" r="6.2" fill="var(--color-primary)" />
+      {/* Kurta / shoulders */}
+      <path d="M21 56c0-10 4.5-15 11-15s11 5 11 15z" fill="var(--color-primary)" />
+      {/* Gamcha over the shoulder */}
+      <path d="M25 45c4-2.5 10-2.5 14 0l0 5c-4-2.5-10-2.5-14 0z" fill="var(--color-surface-tint)" />
+      {/* Waving arm — waves once on first appearance */}
+      <path
+        className="mascot-wave"
+        d="M42 46c5-2 7-6 7.5-10.5"
+        fill="none"
+        stroke="var(--color-primary)"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
   const [isOpen, setIsOpen] = useState(chatOpen ?? false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Mascot hint is retired for good once the farmer dismisses it
+  const [mascotDismissed, setMascotDismissed] = useState(() => {
+    try { return localStorage.getItem('kisan_mitra_mascot_dismissed') === '1'; } catch { return false; }
+  });
 
   // Voice input state: 'idle' | 'recording' | 'transcribing'
   const [voiceState, setVoiceState] = useState('idle');
@@ -318,8 +354,20 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
       mr: 'मायक दाबून विचारा — उत्तर ऐकायला मिळेल.',
     },
     openChat: { en: 'Open AI assistant', hi: 'AI सहायक खोलें', mr: 'AI सहाय्यक उघडा' },
+    mascot: { en: 'Ask me anything', hi: 'कुछ भी पूछें', mr: 'मला काहीही विचारा' },
+    mascotDismiss: { en: 'Dismiss hint', hi: 'संकेत हटाएँ', mr: 'सूचना बंद करा' },
   };
   const ct = (key) => chatText[key][lang] || chatText[key].en;
+
+  // Shown only to a farmer who has not opened the assistant yet, and never
+  // while a result is on screen — the sticky share/print bar lives in exactly
+  // this corner, and nothing may sit over it.
+  const mascotVisible = !isOpen && messages.length === 0 && !diagnosis;
+
+  const dismissMascot = () => {
+    setMascotDismissed(true);
+    try { localStorage.setItem('kisan_mitra_mascot_dismissed', '1'); } catch { /* storage blocked */ }
+  };
 
   return (
     <div className="chatbot-wrapper no-print">
@@ -412,6 +460,25 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
               {ct('voiceHint')}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Farmer mascot + one-line hint. Kept mounted so it can fade both ways;
+          the mascot itself never accepts pointer events, only the dismiss ×. */}
+      {!mascotDismissed && (
+        <div className={`mascot-hint ${mascotVisible ? '' : 'is-hidden'}`}>
+          <p className="mascot-bubble">
+            {ct('mascot')}
+            <button
+              type="button"
+              className="mascot-dismiss"
+              onClick={dismissMascot}
+              aria-label={ct('mascotDismiss')}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </p>
+          <FarmerMascot />
         </div>
       )}
 
