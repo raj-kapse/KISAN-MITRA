@@ -5,6 +5,7 @@
  * Gracefully degrades if Firebase is not configured (returns null).
  */
 
+const { isConfigured } = require('./serviceStatus');
 const adminRaw = require('firebase-admin');
 // Handle both CJS and ESM-style package shapes — some installs expose the
 // SDK under `.default`, and calling `.credential` on the wrong shape is a
@@ -22,8 +23,7 @@ let isInitialized = false;
  * scan save to silently no-op.
  */
 function isFirebaseConfigured() {
-  const projectId = process.env.FIREBASE_PROJECT_ID || '';
-  if (!projectId || /^your[_-]?/i.test(projectId)) return false;
+  if (!isConfigured(process.env.FIREBASE_PROJECT_ID)) return false;
   return getDb() !== null;
 }
 
@@ -36,8 +36,8 @@ function getDb() {
   isInitialized = true;
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
-  if (!projectId) {
-    console.warn('⚠️ FIREBASE_PROJECT_ID not set — scan history disabled.');
+  if (!isConfigured(projectId)) {
+    console.warn('⚠️ FIREBASE_PROJECT_ID missing or still the .env.example placeholder — scan history disabled.');
     return null;
   }
 

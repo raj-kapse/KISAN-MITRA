@@ -16,6 +16,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // --- Route imports ---
+const { describeValue, isServiceConfigured } = require('./services/serviceStatus');
 const healthRoutes = require('./routes/health');
 const diagnoseRoutes = require('./routes/diagnose');
 const weatherRoutes = require('./routes/weather');
@@ -125,11 +126,32 @@ app.listen(PORT, () => {
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`   Trust Proxy: ${process.env.TRUST_PROXY ? process.env.TRUST_PROXY + ' (from env)' : '⚠️ NOT SET — rate limits will apply per-proxy-IP in production'}`);
   
-  // Log API key status (never log the actual keys)
-  console.log(`   Groq API Key: ${process.env.GROQ_API_KEY ? '✅ Set' : '❌ Missing'}`);
-  console.log(`   Gemini API Key: ${process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Missing'}`);
-  console.log(`   OpenWeather Key: ${process.env.OPENWEATHER_API_KEY ? '✅ Set' : '❌ Missing'}`);
-  console.log(`   Firebase Project: ${process.env.FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing'}\n`);
+  // Log API key status (never log the actual keys). A value copied straight
+  // from .env.example is a placeholder, not configuration — reporting it as
+  // "Set" is how a broken install looked healthy while every call failed.
+  const logKeyStatus = (label, value) => {
+    const state = describeValue(value);
+    const shown = state === 'set' ? '✅ Set'
+      : state === 'placeholder' ? '⚠️ Placeholder — replace it in backend/.env'
+      : '❌ Missing';
+    console.log(`   ${label}: ${shown}`);
+  };
+  logKeyStatus('Groq API Key', process.env.GROQ_API_KEY);
+  logKeyStatus('Gemini API Key', process.env.GEMINI_API_KEY);
+  logKeyStatus('OpenWeather Key', process.env.OPENWEATHER_API_KEY);
+  logKeyStatus('Firebase Project', process.env.FIREBASE_PROJECT_ID);
+
+  console.log('');
+  if (!isServiceConfigured('firebaseProject')) {
+    console.log('   Scan history → local JSON store (backend/data/scans.json)');
+  }
+  if (!isServiceConfigured('profileSecret')) {
+    console.log(describeValue(process.env.PROFILE_AUTH_SECRET) === 'placeholder'
+      ? '   PROFILE_AUTH_SECRET: ⚠️ still the .env.example placeholder — ignored; sessions use a derived key.'
+      : '   PROFILE_AUTH_SECRET: ❌ not set — sessions use a derived key.');
+    console.log('   Set a long random value in backend/.env before deploying.');
+  }
+  console.log('');
 });
 
 module.exports = app;

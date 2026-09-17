@@ -5,7 +5,22 @@
 
 const express = require('express');
 const { isFirebaseConfigured } = require('../services/firebase');
+const { isServiceConfigured } = require('../services/serviceStatus');
 const router = express.Router();
+
+/**
+ * Report a key-backed service honestly. A value still holding the
+ * .env.example placeholder is NOT ready — a presence check said "ready" while
+ * every request failed, which is worse than reporting the problem.
+ */
+function keyService(name) {
+  const configured = isServiceConfigured(name);
+  return {
+    configured,
+    status: configured ? 'ready' : 'missing_key',
+    detail: configured ? undefined : 'Key is missing or still the .env.example placeholder.',
+  };
+}
 
 /**
  * GET /api/health
@@ -17,18 +32,9 @@ router.get('/health', (req, res) => {
     message: '🌾 Kisan Mitra backend is running',
     timestamp: new Date().toISOString(),
     services: {
-      gemini: {
-        configured: !!process.env.GEMINI_API_KEY,
-        status: process.env.GEMINI_API_KEY ? 'ready' : 'missing_key',
-      },
-      groq: {
-        configured: !!process.env.GROQ_API_KEY,
-        status: process.env.GROQ_API_KEY ? 'ready' : 'missing_key',
-      },
-      openweather: {
-        configured: !!process.env.OPENWEATHER_API_KEY,
-        status: process.env.OPENWEATHER_API_KEY ? 'ready' : 'missing_key',
-      },
+      gemini: keyService('gemini'),
+      groq: keyService('groq'),
+      openweather: keyService('openweather'),
       // Ask the real readiness check, not just "is the env var set": the
       // default .env ships a placeholder project id that firebase.js
       // deliberately ignores, so a presence check reported "ready" while

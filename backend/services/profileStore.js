@@ -13,6 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { isConfigured } = require('./serviceStatus');
 
 // Operational 1: a random per-boot secret silently invalidated every login
 // after a restart (profiles.json persists → farmers locked out with 401).
@@ -23,10 +24,20 @@ const crypto = require('crypto');
 const DATA_DIR = process.env.KISAN_DATA_DIR || path.join(__dirname, '..', 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 
-const PROFILE_AUTH_SECRET = process.env.PROFILE_AUTH_SECRET ||
-  (() => {
-    console.warn('⚠️  PROFILE_AUTH_SECRET is not set — deriving a stable fallback secret.');
-    console.warn('   Set PROFILE_AUTH_SECRET explicitly in production (backend/.env).');
+// The .env.example ships PROFILE_AUTH_SECRET=replace_with_a_long_random_secret,
+// which is published in this repository. A bare `||` accepted it as configured
+// and silently signed every session token with a secret anyone can read — a
+// forged token then passes verification for ANY profile id. Placeholders are
+// therefore rejected here exactly like a missing value.
+const configuredSecret = process.env.PROFILE_AUTH_SECRET;
+
+const PROFILE_AUTH_SECRET = isConfigured(configuredSecret)
+  ? configuredSecret
+  : (() => {
+    console.warn(configuredSecret
+      ? '⚠️  PROFILE_AUTH_SECRET is still the .env.example placeholder — ignoring it.'
+      : '⚠️  PROFILE_AUTH_SECRET is not set — deriving a stable fallback secret.');
+    console.warn('   Set a long random PROFILE_AUTH_SECRET in backend/.env before deploying.');
     return crypto
       .createHash('sha256')
       .update(`${PROFILES_FILE}|${process.env.FIREBASE_PROJECT_ID || ''}`)

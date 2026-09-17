@@ -81,25 +81,64 @@ else
   ok "Created $ENV_FILE from the template"
 fi
 
-# Report which keys still hold template placeholders (never print the values)
-missing_keys=''
-for key in GROQ_API_KEY GEMINI_API_KEY OPENWEATHER_API_KEY; do
-  if grep -q "^${key}=your_" "$ENV_FILE" 2>/dev/null; then
-    missing_keys="$missing_keys $key"
-  fi
-done
-if [ -n "$missing_keys" ]; then
-  warn "Placeholder keys still present in $ENV_FILE:$missing_keys"
+# Report which keys are missing or still hold template placeholders (never the
+# values). This delegates to backend/services/serviceStatus.js — the same module
+# the boot log and /api/health use — because a private grep here silently missed
+# FIREBASE_PROJECT_ID and called a half-configured install ready.
+missing_core_keys=''
+missing_optional_keys=''
+secret_state='set'
+
+env_report=$(node -e '
+const fs = require("fs");
+const path = require("path");
+const file = process.argv[1];
+
+// Parse .env the way dotenv does: a real environment variable wins, quotes stripped.
+for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+  const m = /^\s*([A-Za-z0-9_]+)\s*=\s*(.*)$/.exec(line);
+  if (!m) continue;
+  const value = m[2].trim().replace(/^["\x27]|["\x27]$/g, "");
+  if (process.env[m[1]] === undefined) process.env[m[1]] = value;
+}
+
+const { describeValue } = require(path.join(process.cwd(), "backend", "services", "serviceStatus.js"));
+const keys = ["GROQ_API_KEY", "GEMINI_API_KEY", "OPENWEATHER_API_KEY", "FIREBASE_PROJECT_ID", "PROFILE_AUTH_SECRET"];
+for (const key of keys) {
+  const state = describeValue(process.env[key]);
+  if (state !== "set") console.log(key + " " + state);
+}
+' "$ENV_FILE" 2>/dev/null || true)
+
+while read -r key state; do
+  [ -n "$key" ] || continue
+  case "$key" in
+    GROQ_API_KEY|GEMINI_API_KEY|OPENWEATHER_API_KEY) missing_core_keys="$missing_core_keys $key" ;;
+    FIREBASE_PROJECT_ID) missing_optional_keys="$missing_optional_keys $key" ;;
+    PROFILE_AUTH_SECRET) secret_state="$state" ;;
+  esac
+done <<< "$env_report"
+
+if [ -n "$missing_core_keys" ]; then
+  warn "Missing or placeholder keys in $ENV_FILE:$missing_core_keys"
   printf '    The app starts without them; AI diagnosis, chat and voice stay off\n'
   printf '    until you paste real keys (free tiers: console.groq.com,\n'
   printf '    aistudio.google.com/apikey, openweathermap.org/api).\n'
-else
+fi
+
+if [ -n "$missing_optional_keys" ]; then
+  warn "Optional keys not configured:$missing_optional_keys"
+  printf '    Cloud history is off; scans are saved to backend/data/scans.json instead.\n'
+fi
+
+if [ -z "$missing_core_keys" ] && [ -z "$missing_optional_keys" ]; then
   ok 'API keys look configured'
 fi
 
-if grep -q '^PROFILE_AUTH_SECRET=replace_with' "$ENV_FILE" 2>/dev/null; then
-  warn 'PROFILE_AUTH_SECRET is still the template value — fine locally, set a'
-  printf '    long random value before deploying anywhere public.\n'
+if [ "$secret_state" != 'set' ]; then
+  warn "PROFILE_AUTH_SECRET is $secret_state — sessions use a locally derived key."
+  printf '    Fine locally (sign-ins survive restarts); set a long random value\n'
+  printf '    before deploying anywhere public.\n'
 fi
 
 if [ "$MODE" = 'check' ]; then

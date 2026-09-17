@@ -140,14 +140,24 @@ npm install
 npm run dev              # http://localhost:5000
 ```
 
-On boot the server prints which keys it found, so a missing key is obvious immediately:
+On boot the server reports each key it found — never the values — so a bad setup is obvious immediately:
 
 ```
-Groq API Key: ✅ Set
-Gemini API Key: ✅ Set
-OpenWeather Key: ✅ Set
-Firebase Project: ❌ Missing
+🌾 Kisan Mitra backend running on http://localhost:5000
+   Environment: development
+   Frontend URL: http://localhost:5173
+   Trust Proxy: ⚠️ NOT SET — rate limits will apply per-proxy-IP in production
+   Groq API Key: ✅ Set
+   Gemini API Key: ✅ Set
+   OpenWeather Key: ✅ Set
+   Firebase Project: ⚠️ Placeholder — replace it in backend/.env
+
+   Scan history → local JSON store (backend/data/scans.json)
+   PROFILE_AUTH_SECRET: ❌ not set — sessions use a derived key.
+   Set a long random value in backend/.env before deploying.
 ```
+
+`.env.example` ships placeholder text (`your_groq_api_key_here`, `replace_with_a_long_random_secret`), and a value left at its placeholder is reported as **⚠️ Placeholder**, not **✅ Set** — the same distinction `/api/health` and `install.sh` make. A bare presence check would have called those keys configured while every request failed; instead the boot log, the health endpoint and the installer all agree on what is actually usable.
 
 ### 2. Frontend
 
@@ -176,9 +186,9 @@ Only the first two are required to see the app work; everything else degrades gr
 | `GEMINI_VISION_MODEL_1/2/3` | `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.5-flash` | Vision models tried in order |
 | `GEMINI_TTS_MODEL` | `gemini-2.5-flash-preview-tts` | Model behind `/api/tts` |
 | `OPENWEATHER_API_KEY` | — | Preferred weather + geocoding provider |
-| `FIREBASE_PROJECT_ID` | — | Enables Firestore history (placeholder values are ignored) |
+| `FIREBASE_PROJECT_ID` | — | Enables Firestore history. A placeholder value is ignored and history uses the local JSON store instead |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | `./firebase-service-account.json` | Falls back to application default credentials |
-| `PROFILE_AUTH_SECRET` | derived | Signs profile session tokens. **Set this in production**, otherwise it is derived from stable local values |
+| `PROFILE_AUTH_SECRET` | derived | Signs profile session tokens. **Set this in production.** The `.env.example` placeholder is *ignored* rather than trusted — a repo-public signing key would let anyone forge a session |
 | `PROVIDER_TIMEOUT_MS` | `10000` | Hard timeout per AI provider attempt |
 | `PROVIDER_COOLDOWN_MS` | `300000` | How long a failing provider is skipped by the circuit breaker |
 | `KISAN_DATA_DIR` | `backend/data` | Where the local JSON fallback store lives. Tests point this at a temp directory so they can never touch real data |
@@ -283,6 +293,8 @@ What is in place, and what still is not.
 
 - Profile tokens are HMAC-SHA256 over a payload with a 30-day expiry, compared with `crypto.timingSafeEqual`; a token authorises only its own profile, and history requests claiming someone else's `profileId` get `403`.
 - A known phone number cannot be taken over from a new device — the second device gets `401` rather than a session.
+- A key left at its `.env.example` placeholder counts as **unconfigured**, in the boot log, `/api/health` and the installer alike. Without that, copying the template made every service report itself ready while nothing worked.
+- `PROFILE_AUTH_SECRET` is held to the same rule: the template's `replace_with_a_long_random_secret` is *rejected* rather than used, because a signing key published in this repository would let anyone mint a token for any profile. An unusable secret falls back to a locally derived one, with a warning on every boot.
 - API keys are read server-side only and never logged or returned; the health endpoint reports whether a key is configured, never its value. Error responses expose internal detail only when `NODE_ENV=development`.
 
 **Still open, deliberately**
