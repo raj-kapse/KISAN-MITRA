@@ -20,7 +20,7 @@ import ProfileModal from './components/ProfileModal';
 import ConfirmDialog from './components/ConfirmDialog';
 import OfflineBanner from './components/OfflineBanner';
 import Home from './components/Home';
-import { ToastHost, showToast } from './components/Toast';
+import { ToastHost } from './components/Toast';
 import { getHistory, diagnoseCrop, saveScanHistory, clearProfileToken } from './api';
 import './App.css';
 
@@ -164,7 +164,9 @@ function App() {
   useEffect(() => {
     if (!entered || view !== 'home') return;
     let cancelled = false;
-    setScansLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setScansLoading(true);
+    });
     getHistory(3, profile)
       .then((result) => {
         if (!cancelled && result.success) setRecentScans(result.scans || []);

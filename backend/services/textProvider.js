@@ -86,6 +86,14 @@ async function geminiChat(messages, systemContext) {
     parts: [{ text: msg.content }],
   }));
 
+  // Gemini API requires the first message to have role 'user'
+  while (contents.length > 0 && contents[0].role !== 'user') {
+    contents.shift();
+  }
+  if (contents.length === 0) {
+    contents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+  }
+
   // Inject context into the first USER turn (chats open with a model greeting)
   const firstUser = contents.find((m) => m.role === 'user');
   if (firstUser) {

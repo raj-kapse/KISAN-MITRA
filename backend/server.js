@@ -11,7 +11,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
 
 // Load environment variables before anything else
 dotenv.config();
@@ -82,7 +81,7 @@ app.use('/api', (req, res) => {
 });
 
 // --- Error handling middleware ---
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     success: false,

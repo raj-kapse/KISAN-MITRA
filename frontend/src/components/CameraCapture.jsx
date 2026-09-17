@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, ImagePlus, FlaskConical, RotateCcw, ScanSearch } from 'lucide-react';
-import { showToast } from './Toast';
+import { Camera, ImagePlus, FlaskConical, RotateCcw } from 'lucide-react';
+import { showToast } from '../utils/toast';
 import './CameraCapture.css';
 
 /**

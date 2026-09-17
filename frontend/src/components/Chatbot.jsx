@@ -46,13 +46,15 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
 
   // BUG 1: App controls open state (Home "Ask AI") — sync when the prop changes
   useEffect(() => {
-    if (chatOpen !== undefined) setIsOpen(chatOpen);
+    if (chatOpen !== undefined) {
+      queueMicrotask(() => setIsOpen(chatOpen));
+    }
   }, [chatOpen]);
 
   // Diagnose-arrival nudge: a single 8px pulse ring on the FAB
   useEffect(() => {
     if (diagnosis && !isOpen) {
-      setPulseRing(true);
+      queueMicrotask(() => setPulseRing(true));
       const t = setTimeout(() => setPulseRing(false), 2200);
       return () => clearTimeout(t);
     }
@@ -66,7 +68,9 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
         hi: 'नमस्ते! मैं आपका किसान मित्र AI सहायक हूँ। आप अपनी फसल की रिपोर्ट या किसी भी कृषि समस्या के बारे में मुझसे पूछ सकते हैं।',
         mr: 'नमस्कार! मी तुमचा शेतकरी मित्र AI सहाय्यक आहे. तुमच्या पिकाच्या रिपोर्टबद्दल किंवा कोणत्याही शेती समस्येबद्दल मला विचारू शकता.',
       };
-      setMessages([{ role: 'model', content: greetings[lang] || greetings.en, isGreeting: true }]);
+      queueMicrotask(() => {
+        setMessages([{ role: 'model', content: greetings[lang] || greetings.en, isGreeting: true }]);
+      });
     }
   }, [isOpen, messages.length, lang]);
 
@@ -294,7 +298,6 @@ function Chatbot({ diagnosis, lang, chatOpen, setChatOpen }) {
     setVoiceState('idle');
   };
 
-  const isHi = lang === 'hi';
   const chatText = {
     title: { en: 'AI Assistant', hi: 'AI सहायक', mr: 'AI सहाय्यक' },
     online: { en: 'Online', hi: 'ऑनलाइन', mr: 'ऑनलाइन' },

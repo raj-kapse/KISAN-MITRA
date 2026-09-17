@@ -16,7 +16,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CloudSun, MapPin, Sparkles, Info } from 'lucide-react';
 import { getWeather, getAiWeatherAdvisory, geocodeCity } from '../api';
-import { weatherIconFor } from './Home';
+import { WeatherIcon } from '../utils/weatherIcons';
 import './WeatherAdvisory.css';
 
 function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
@@ -217,28 +217,25 @@ function WeatherAdvisory({ lang = 'en', diagnosis, onLocationResolved }) {
       </div>
 
       {/* Current conditions */}
-      {current && (() => {
-        const CurrentIcon = weatherIconFor(current.description);
-        return (
-          <div className="current-weather">
-            <div className="current-main">
-              <CurrentIcon size={36} className="current-temp-icon" aria-hidden="true" />
-              <span className="current-temp">{current.temp}°C</span>
-              <div className="current-details">
-                <span>{current.description}</span>
-                {(current.city || manualCity?.name) && (
-                  <span className="city-name"><MapPin size={11} aria-hidden="true" /> {current.city || `${manualCity.name}${manualCity.state ? ', ' + manualCity.state : ''}`}</span>
-                )}
-              </div>
-            </div>
-            <div className="current-stats">
-              <span>💧 {current.humidity}%</span>
-              <span>🌡️ {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
-              {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
+      {current && (
+        <div className="current-weather">
+          <div className="current-main">
+            <WeatherIcon description={current.description} size={36} className="current-temp-icon" aria-hidden="true" />
+            <span className="current-temp">{current.temp}°C</span>
+            <div className="current-details">
+              <span>{current.description}</span>
+              {(current.city || manualCity?.name) && (
+                <span className="city-name"><MapPin size={11} aria-hidden="true" /> {current.city || `${manualCity.name}${manualCity.state ? ', ' + manualCity.state : ''}`}</span>
+              )}
             </div>
           </div>
-        );
-      })()}
+          <div className="current-stats">
+            <span>💧 {current.humidity}%</span>
+            <span>🌡️ {isHi ? "महसूस" : isMr ? "भासणारे" : "Feels"} {current.feels_like}°C</span>
+            {current.wind_speed && <span>💨 {current.wind_speed} m/s</span>}
+          </div>
+        </div>
+      )}
 
       {/* 5-day forecast */}
       {forecast && forecast.length > 0 && (

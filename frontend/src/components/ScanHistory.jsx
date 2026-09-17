@@ -99,7 +99,11 @@ function ScanHistory({ lang = 'en', onBack, profile = null, onOpenScan }) {
   }, [profile]);
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) load();
+    });
+    return () => { cancelled = true; };
   }, [load, retryCount]);
 
   return (

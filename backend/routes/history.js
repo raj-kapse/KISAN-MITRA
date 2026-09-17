@@ -22,9 +22,9 @@ router.get('/history', async (req, res) => {
     const deviceId = (req.query.deviceId || '').toString().trim().slice(0, 128) || null;
     const profileId = (req.query.profileId || '').toString().trim().slice(0, 64) || null;
     if (profileId) {
-      const auth = requireProfileAuth(req, res, () => {});
-      if (auth) return auth;
-      if (req.profile.id !== profileId) {
+      requireProfileAuth(req, res, () => {});
+      if (res.headersSent) return;
+      if (!req.profile || req.profile.id !== profileId) {
         return res.status(403).json({ success: false, error: 'You can only access your own history.' });
       }
     }
@@ -57,9 +57,9 @@ router.post('/history', async (req, res) => {
     }
 
     if (profileId) {
-      const auth = requireProfileAuth(req, res, () => {});
-      if (auth) return auth;
-      if (req.profile.id !== profileId) {
+      requireProfileAuth(req, res, () => {});
+      if (res.headersSent) return;
+      if (!req.profile || req.profile.id !== profileId) {
         return res.status(403).json({ success: false, error: 'You can only save to your own history.' });
       }
     }

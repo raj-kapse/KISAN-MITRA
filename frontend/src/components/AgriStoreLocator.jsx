@@ -99,7 +99,7 @@ function AgriStoreLocator({ lang }) {
       await fetchStores(loc.lat, loc.lon);
       setShowCityInput(false);
       setCityQuery('');
-    } catch (err) {
+    } catch {
       setError(L.cityFailed); // trilingual generic, not the raw English provider error
     } finally {
       setCityLoading(false);

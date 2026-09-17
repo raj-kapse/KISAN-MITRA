@@ -11,10 +11,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ScanLine, History, MessageCircle, CloudSun, Sun, CloudRain, CloudFog,
+  ScanLine, History, MessageCircle, CloudSun,
   Sprout, AlertTriangle, ArrowRight,
 } from 'lucide-react';
-import { getWeather, getHistory, geocodeCity } from '../api';
+import { getWeather, geocodeCity } from '../api';
+import { WeatherIcon } from '../utils/weatherIcons';
 import './Home.css';
 
 const T = {
@@ -41,15 +42,6 @@ const T = {
   scanCta: { en: 'Scan your crop', hi: 'अपनी फसल स्कैन करें', mr: 'तुमचे पीक स्कॅन करा' },
   healthy: { en: 'Healthy', hi: 'स्वस्थ', mr: 'निरोगी' },
 };
-
-/** description → Lucide icon (shared mapping for weather cards) */
-export function weatherIconFor(description = '') {
-  const d = description.toLowerCase();
-  if (d.includes('rain') || d.includes('drizzle') || d.includes('thunder')) return CloudRain;
-  if (d.includes('fog') || d.includes('haze') || d.includes('mist')) return CloudFog;
-  if (d.includes('cloud')) return CloudSun;
-  return Sun;
-}
 
 function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onAskAi, onOpenScan }) {
   const t = (key) => T[key][lang] || T[key].en;
@@ -85,7 +77,10 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
   }, []);
 
   useEffect(() => {
-    loadWeather();
+    const t = setTimeout(() => {
+      loadWeather();
+    }, 0);
+    return () => clearTimeout(t);
   }, [loadWeather]);
 
   // City fallback — when geolocation is denied/unavailable the farmer types
@@ -118,7 +113,6 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
     weekday: 'long', day: 'numeric', month: 'long',
   });
 
-  const WeatherIcon = weatherIconFor(weather?.current?.description);
   const hasScans = recentScans.length > 0;
 
   return (
@@ -165,21 +159,18 @@ function Home({ lang = 'en', profile, recentScans, scansLoading, onNavigate, onA
         {weatherState === 'ok' && weather?.current && (
           <>
             <div className="home-weather-main">
-              <WeatherIcon size={34} aria-hidden="true" />
+              <WeatherIcon description={weather.current.description} size={34} aria-hidden="true" />
               <span className="home-weather-temp">{weather.current.temp}°C</span>
               <span className="home-weather-desc">{weather.current.description}</span>
             </div>
             {Array.isArray(weather.forecast) && weather.forecast.length > 0 && (
               <div className="home-weather-strip">
-                {weather.forecast.slice(0, 3).map((day, i) => {
-                  const DayIcon = weatherIconFor(day.description);
-                  return (
-                    <div key={i} className="home-weather-day">
-                      <DayIcon size={16} aria-hidden="true" />
-                      <span>{day.temp_min}°–{day.temp_max}°</span>
-                    </div>
-                  );
-                })}
+                {weather.forecast.slice(0, 3).map((day, i) => (
+                  <div key={i} className="home-weather-day">
+                    <WeatherIcon description={day.description} size={16} aria-hidden="true" />
+                    <span>{day.temp_min}°–{day.temp_max}°</span>
+                  </div>
+                ))}
               </div>
             )}
           </>
