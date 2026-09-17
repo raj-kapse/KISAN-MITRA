@@ -7,6 +7,9 @@
 
 const { GoogleGenAI } = require('@google/genai');
 
+/** provider name → epoch-ms until which it is skipped (circuit breaker). */
+const providerCooldowns = new Map();
+
 /**
  * System and task prompt instructing Gemini to act as an agricultural expert
  * and return a strictly structured JSON response for crop disease diagnosis.
@@ -115,13 +118,36 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
   let lastError = null;
   let servedBy = null;
 
+  // Circuit breaker: a provider that just timed out is likely still
+  // congested — skip it for a few minutes so scans don't repeatedly pay
+  // the timeout cost. It rejoins the chain automatically when the window
+  // expires (or immediately on process restart).
+  const PROVIDER_TIMEOUT_MS = Number(process.env.PROVIDER_TIMEOUT_MS) || 10000;
+  const COOLDOWN_MS = Number(process.env.PROVIDER_COOLDOWN_MS) || 5 * 60 * 1000;
+
   for (const attempt of attempts) {
+    const coolingUntil = providerCooldowns.get(attempt.provider);
+    if (coolingUntil && Date.now() < coolingUntil) {
+      console.log(`⏭️ [${attempt.provider}] cooling down after a recent timeout — skipping`);
+      continue;
+    }
     try {
-      responseText = await attempt.run();
+      responseText = await withTimeout(attempt.run(), PROVIDER_TIMEOUT_MS, attempt.provider);
       servedBy = attempt.provider;
+      providerCooldowns.delete(attempt.provider);
       console.log(`✅ Diagnosis served by ${servedBy}`);
       break;
     } catch (err) {
+      // Trip the breaker on timeouts AND congestion errors (503 high-demand,
+      // 429 quota) — both mean the provider is unhealthy right now. Auth/config
+      // errors (401/400) don't trip it: skipping wouldn't help, and the fast
+      // failure cost is negligible.
+      const isTimeout = err.code === 'PROVIDER_TIMEOUT';
+      const isCongestion = err.status === 429 || err.status >= 500 ||
+        /high demand|ResourceExhausted|overload/i.test(err.message || '');
+      if (isTimeout || isCongestion) {
+        providerCooldowns.set(attempt.provider, Date.now() + COOLDOWN_MS);
+      }
       console.warn(`↪️ [${attempt.provider}] failed: ${err.message} — trying next provider...`);
       lastError = err;
     }
@@ -152,6 +178,23 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
     console.error('Failed to parse Gemini response as JSON. Raw response:', responseText);
     throw new Error(`Invalid JSON returned by Gemini: ${parseError.message}`);
   }
+}
+
+/**
+ * Reject if a provider attempt exceeds `ms` — keeps worst-case scan latency
+ * bounded (attempts × timeout) instead of unbounded when a model stalls.
+ */
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        const err = new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
+        err.code = 'PROVIDER_TIMEOUT';
+        reject(err);
+      }, ms);
+    }),
+  ]);
 }
 
 /**
@@ -198,35 +241,21 @@ async function groqVisionDiagnose(base64Image, mimeType) {
 
 /** One Gemini vision call with the JSON prompt. Transient errors propagate to the chain. */
 async function geminiVisionCall(ai, model, base64Image, mimeType) {
-  const maxRetries = 2;
-  let lastErr;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType, data: base64Image } },
-            { text: CROP_DIAGNOSIS_PROMPT },
-          ],
-        }],
-        config: { responseMimeType: 'application/json' },
-      });
-      if (!response.text) throw new Error(`Empty response from ${model}`);
-      return response.text;
-    } catch (err) {
-      lastErr = err;
-      const transient = err.status === 503 || err.status === 429 ||
-        /high demand|ResourceExhausted|overload/i.test(err.message || '');
-      if (transient && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, attempt * 1500));
-      } else {
-        throw err;
-      }
-    }
-  }
-  throw lastErr;
+  // No in-model retries: the provider chain below already retries across
+  // models/providers. Re-trying the same congested model only adds latency.
+  const response = await ai.models.generateContent({
+    model,
+    contents: [{
+      role: 'user',
+      parts: [
+        { inlineData: { mimeType, data: base64Image } },
+        { text: CROP_DIAGNOSIS_PROMPT },
+      ],
+    }],
+    config: { responseMimeType: 'application/json' },
+  });
+  if (!response.text) throw new Error(`Empty response from ${model}`);
+  return response.text;
 }
 
 /**
