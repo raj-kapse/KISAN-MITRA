@@ -185,16 +185,18 @@ async function diagnoseCropDisease(imageBuffer, mimeType) {
  * bounded (attempts × timeout) instead of unbounded when a model stalls.
  */
 function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      setTimeout(() => {
-        const err = new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
-        err.code = 'PROVIDER_TIMEOUT';
-        reject(err);
-      }, ms);
-    }),
-  ]);
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const err = new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
+      err.code = 'PROVIDER_TIMEOUT';
+      reject(err);
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 /**

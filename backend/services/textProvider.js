@@ -18,16 +18,18 @@ const PROVIDER_TIMEOUT_MS = Number(process.env.PROVIDER_TIMEOUT_MS) || 15000;
 
 /** Reject if a provider call exceeds `ms` — chat/advisory must not hang. */
 function withTimeout(promise, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      setTimeout(() => {
-        const err = new Error(`${label} timed out after ${Math.round(PROVIDER_TIMEOUT_MS / 1000)}s`);
-        err.code = 'PROVIDER_TIMEOUT';
-        reject(err);
-      }, PROVIDER_TIMEOUT_MS);
-    }),
-  ]);
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const err = new Error(`${label} timed out after ${Math.round(PROVIDER_TIMEOUT_MS / 1000)}s`);
+      err.code = 'PROVIDER_TIMEOUT';
+      reject(err);
+    }, PROVIDER_TIMEOUT_MS);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 /** Groq via the OpenAI-compatible chat-completions endpoint. */
